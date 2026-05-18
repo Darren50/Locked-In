@@ -205,7 +205,7 @@ def draw_pomodoro(ts):
     draw = ImageDraw.Draw(img)
     accent   = (220, 80, 80)  if ts['mode'] == "FOCUS" else (80, 200, 120)
     bg_badge = (60, 15, 15)   if ts['mode'] == "FOCUS" else (15, 55, 25)
-    draw.text((12, 10), "LOCKED IN", fill=(160, 160, 220), font=FONT_SMALL)
+    draw.text((12, 10), "LOCKED IN", fill=(160, 160, 220), font=FONT_MED)
     draw.rounded_rectangle([200, 7, 308, 30], radius=7, fill=bg_badge, outline=accent, width=1)
     draw.text((208, 11), "BREAK" if "BREAK" in ts['mode'] else ts['mode'],
               fill=accent, font=FONT_SMALL)
@@ -218,7 +218,7 @@ def draw_pomodoro(ts):
         draw.text((120, 57), "PAUSED", fill=(220, 200, 80), font=FONT_SMALL)
     else:
         timer_col = "white"
-    draw.text((45, 75), f"{mins:02d}:{secs:02d}", fill=timer_col, font=FONT_SMALL)
+    draw.text((45, 75), f"{mins:02d}:{secs:02d}", fill=timer_col, font=FONT_BIG)
     bar_w = int(300 * (ts['total'] - ts['time_left']) / max(ts['total'], 1))
     draw.rectangle([10, 185, 310, 191], fill=(40, 40, 60))
     draw.rectangle([10, 185, 10+bar_w, 191], fill=accent)
@@ -295,7 +295,7 @@ def run_tasks(last_img=None):
     if last_img: fade(last_img)
     img  = Image.new("RGB", (W, H), (10, 10, 25))
     draw = ImageDraw.Draw(img)
-    draw.text((48, 90),  "Tasks coming soon!", fill="white",       font=FONT_SMALL)
+    draw.text((48, 90),  "Tasks coming soon!", fill="white",       font=FONT_MED)
     draw.text((65, 218), "K1 Back    K4 Home",  fill=(80, 80, 100), font=FONT_SMALL)
     write_lcd(img)
     while True:
