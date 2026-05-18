@@ -66,40 +66,15 @@ def fade(from_img, duration=0.25):
         if alpha >= 1.0: break
         write_lcd(Image.blend(from_img, black, min(alpha, 1.0)))
 
-def draw_cute(t):
-    BG = (238, 230, 255)
-    img  = Image.new("RGB", (W, H), BG)
-    draw = ImageDraw.Draw(img)
-    bob   = math.sin(t * 1.2) * 5
-    eye_y = int(102 + bob * 0.4)
-    lcx, rcx, er = 105, 215, 36
-    blink = (t % 5.0) < 0.15
-    if blink:
-        for ex in [lcx, rcx]:
-            draw.line([ex-er+6, eye_y, ex+er-6, eye_y], fill=(30, 18, 60), width=6)
-    else:
-        for ex in [lcx, rcx]:
-            draw.ellipse([ex-er, eye_y-er, ex+er, eye_y+er], fill=(30, 18, 60))
-            draw.ellipse([ex-13, eye_y-17, ex+3, eye_y-1], fill="white")
-            draw.ellipse([ex+8, eye_y-9, ex+15, eye_y-2], fill="white")
-    for bx in [lcx-50, rcx+50]:
-        draw.ellipse([bx-20, eye_y+12, bx+20, eye_y+28], fill=(245, 160, 185))
-    draw.arc([W//2-48, eye_y+38, W//2+48, eye_y+98],
-             start=12, end=168, fill=(30, 18, 60), width=5)
-    draw.text((10, 8), "LOCKED IN", fill=(105, 78, 195), font=FONT_MED)
-    draw.text((18, 218), "K1 Start Timer    K2 Tasks",
-              fill=(155, 135, 210), font=FONT_SMALL)
-    return img
-
 class PomodoroTimer:
     def __init__(self):
-        self._lock = threading.Lock()
-        self.session = 1
+        self._lock     = threading.Lock()
+        self.session   = 1
         self.time_left = FOCUS_MINS * 60
-        self.total = FOCUS_MINS * 60
-        self.mode = "FOCUS"
-        self.paused = True
-        self.active = False
+        self.total     = FOCUS_MINS * 60
+        self.mode      = "FOCUS"
+        self.paused    = True
+        self.active    = False
 
     def start(self):
         with self._lock:
@@ -117,24 +92,24 @@ class PomodoroTimer:
 
     def full_stop(self):
         with self._lock:
-            self.session = 1
+            self.session   = 1
             self.time_left = FOCUS_MINS * 60
-            self.total = FOCUS_MINS * 60
-            self.mode = "FOCUS"
-            self.paused = True
-            self.active = False
+            self.total     = FOCUS_MINS * 60
+            self.mode      = "FOCUS"
+            self.paused    = True
+            self.active    = False
 
     def _next_phase(self):
         if self.mode == "FOCUS":
-            is_long = self.session % SESSIONS_BEFORE_LONG == 0
-            self.mode = "LONG BREAK" if is_long else "BREAK"
+            is_long    = self.session % SESSIONS_BEFORE_LONG == 0
+            self.mode  = "LONG BREAK" if is_long else "BREAK"
             self.total = LONG_BREAK_MINS * 60 if is_long else SHORT_BREAK_MINS * 60
         else:
             self.session += 1
-            self.mode = "FOCUS"
-            self.total = FOCUS_MINS * 60
+            self.mode    = "FOCUS"
+            self.total   = FOCUS_MINS * 60
         self.time_left = self.total
-        self.paused = True
+        self.paused    = True
 
     def tick(self):
         with self._lock:
@@ -162,12 +137,75 @@ def _timer_thread():
 
 threading.Thread(target=_timer_thread, daemon=True).start()
 
+# ── CUTE FACE ─────────────────────────────────────────────────
+
+def draw_cute(t, ts=None):
+    BG = (238, 230, 255)
+    img  = Image.new("RGB", (W, H), BG)
+    draw = ImageDraw.Draw(img)
+    bob   = math.sin(t * 1.2) * 5
+    eye_y = int(102 + bob * 0.4)
+    lcx, rcx, er = 105, 215, 36
+    blink = (t % 5.0) < 0.15
+    if blink:
+        for ex in [lcx, rcx]:
+            draw.line([ex-er+6, eye_y, ex+er-6, eye_y], fill=(30, 18, 60), width=6)
+    else:
+        for ex in [lcx, rcx]:
+            draw.ellipse([ex-er, eye_y-er, ex+er, eye_y+er], fill=(30, 18, 60))
+            draw.ellipse([ex-13, eye_y-17, ex+3,  eye_y-1],  fill="white")
+            draw.ellipse([ex+8,  eye_y-9,  ex+15, eye_y-2],  fill="white")
+    for bx in [lcx-50, rcx+50]:
+        draw.ellipse([bx-20, eye_y+12, bx+20, eye_y+28], fill=(245, 160, 185))
+    draw.arc([W//2-48, eye_y+38, W//2+48, eye_y+98],
+             start=12, end=168, fill=(30, 18, 60), width=5)
+    draw.text((10, 8), "LOCKED IN", fill=(105, 78, 195), font=FONT_MED)
+    if ts and ts['active'] and "BREAK" in ts['mode']:
+        mins, secs = divmod(ts['time_left'], 60)
+        draw.text((175, 10), f"BREAK {mins:02d}:{secs:02d}",
+                  fill=(70, 190, 110), font=FONT_TINY)
+        draw.text((18, 218), "K1 Resume    K2 Tasks",
+                  fill=(155, 135, 210), font=FONT_SMALL)
+    else:
+        draw.text((18, 218), "K1 Start Timer    K2 Tasks",
+                  fill=(155, 135, 210), font=FONT_SMALL)
+    return img
+
+# ── SERIOUS FACE ──────────────────────────────────────────────
+
+def draw_serious(t, ts):
+    BG = (14, 8, 22)
+    img  = Image.new("RGB", (W, H), BG)
+    draw = ImageDraw.Draw(img)
+    bob   = math.sin(t * 0.8) * 2
+    eye_y = int(108 + bob * 0.2)
+    lcx, rcx = 105, 215
+    ew, eh   = 44, 24
+    by = eye_y - eh - 14
+    draw.line([lcx-ew+2, by-5, lcx+ew-2, by+7],  fill=(215, 205, 235), width=6)
+    draw.line([rcx-ew+2, by+7, rcx+ew-2, by-5],  fill=(215, 205, 235), width=6)
+    draw.rectangle([lcx-ew-12, eye_y-eh-4, rcx+ew+12, eye_y+eh+4], fill=(8, 8, 10))
+    draw.rectangle([lcx+ew-4,  eye_y-7,    rcx-ew+4,  eye_y+7],    fill=(8, 8, 10))
+    for ex in [lcx, rcx]:
+        draw.rectangle([ex-ew+2, eye_y-eh+1, ex+ew-2, eye_y+eh-1], fill=(65, 7, 7))
+        draw.rectangle([ex-ew+7, eye_y-eh+4, ex-3,    eye_y+2],    fill=(130, 22, 22))
+    draw.line([W//2-24, eye_y+62, W//2+24, eye_y+62], fill=(195, 185, 215), width=5)
+    mins, secs = divmod(ts['time_left'], 60)
+    st = "⏸" if ts['paused'] else "▶"
+    draw.text((10, 8), f"{st} FOCUS  {mins:02d}:{secs:02d}  S{ts['session']}",
+              fill=(210, 65, 65), font=FONT_SMALL)
+    draw.text((18, 218), "K1 Resume Timer    K2 Tasks",
+              fill=(110, 90, 135), font=FONT_SMALL)
+    return img
+
+# ── POMODORO SCREEN ───────────────────────────────────────────
+
 def draw_pomodoro(ts):
     img  = Image.new("RGB", (W, H), (10, 10, 25))
     draw = ImageDraw.Draw(img)
-    accent = (220, 80, 80) if ts['mode'] == "FOCUS" else (80, 200, 120)
-    bg_badge = (60, 15, 15) if ts['mode'] == "FOCUS" else (15, 55, 25)
-    draw.text((12, 10), "LOCKED IN", fill=(160, 160, 220), font=FONT_MED)
+    accent   = (220, 80, 80)  if ts['mode'] == "FOCUS" else (80, 200, 120)
+    bg_badge = (60, 15, 15)   if ts['mode'] == "FOCUS" else (15, 55, 25)
+    draw.text((12, 10), "LOCKED IN", fill=(160, 160, 220), font=FONT_SMALL)
     draw.rounded_rectangle([200, 7, 308, 30], radius=7, fill=bg_badge, outline=accent, width=1)
     draw.text((208, 11), "BREAK" if "BREAK" in ts['mode'] else ts['mode'],
               fill=accent, font=FONT_SMALL)
@@ -180,27 +218,58 @@ def draw_pomodoro(ts):
         draw.text((120, 57), "PAUSED", fill=(220, 200, 80), font=FONT_SMALL)
     else:
         timer_col = "white"
-    draw.text((45, 75), f"{mins:02d}:{secs:02d}", fill=timer_col, font=FONT_BIG)
+    draw.text((45, 75), f"{mins:02d}:{secs:02d}", fill=timer_col, font=FONT_SMALL)
     bar_w = int(300 * (ts['total'] - ts['time_left']) / max(ts['total'], 1))
     draw.rectangle([10, 185, 310, 191], fill=(40, 40, 60))
     draw.rectangle([10, 185, 10+bar_w, 191], fill=accent)
     draw.text((12, 200), f"Session {ts['session']} of {SESSIONS_BEFORE_LONG}",
               fill=(120, 120, 140), font=FONT_SMALL)
-    draw.text((12, 222), "K1 Pause  K2 Skip  K3 End  K4 Home",
-              fill=(60, 60, 80), font=FONT_SMALL)
+    if not ts['active']:
+        draw.text((12, 222), "K1 Start                        K4 Home",
+                  fill=(60, 60, 80), font=FONT_SMALL)
+    else:
+        draw.text((12, 222), "K1 Pause  K2 Skip  K3 End  K4 Home",
+                  fill=(60, 60, 80), font=FONT_SMALL)
     return img
+
+# ── CONFIRM END ───────────────────────────────────────────────
+
+def run_confirm_end(last_img=None):
+    k1.clear(); k2.clear(); k3.clear(); k4.clear()
+    if last_img: fade(last_img)
+    img  = Image.new("RGB", (W, H), (15, 10, 25))
+    draw = ImageDraw.Draw(img)
+    draw.text((78, 42),  "End Session?",               fill="white",         font=FONT_MED)
+    draw.text((42, 82),  "Timer will reset to session 1.", fill=(160, 150, 180), font=FONT_SMALL)
+    draw.rounded_rectangle([28,  118, 142, 165], radius=10, fill=(155, 30, 30))
+    draw.text((57,  130), "YES", fill="white", font=FONT_MED)
+    draw.rounded_rectangle([178, 118, 292, 165], radius=10, fill=(30, 125, 65))
+    draw.text((207, 130), "NO",  fill="white", font=FONT_MED)
+    draw.text((22, 218), "K1 Yes, end it    K2 No, go back",
+              fill=(100, 90, 120), font=FONT_SMALL)
+    write_lcd(img)
+    while True:
+        if k1.is_set():
+            k1.clear(); timer.full_stop(); return "idle", img
+        if k2.is_set() or k4.is_set():
+            k2.clear(); k4.clear(); return "pomodoro", img
+
+# ── SCREENS ───────────────────────────────────────────────────
 
 def run_idle(last_img=None):
     k1.clear(); k2.clear(); k3.clear(); k4.clear()
     if last_img: fade(last_img)
     start = time.time()
     while True:
-        t = time.time() - start
-        write_lcd(draw_cute(t))
+        t        = time.time() - start
+        ts       = timer.state()
+        on_focus = ts['active'] and ts['mode'] == "FOCUS"
+        img = draw_serious(t, ts) if on_focus else draw_cute(t, ts)
+        write_lcd(img)
         if k1.is_set():
-            k1.clear(); return "pomodoro", draw_cute(t)
+            k1.clear(); return "pomodoro", img
         if k2.is_set():
-            k2.clear(); return "tasks", draw_cute(t)
+            k2.clear(); return "tasks", img
         k4.clear()
 
 def run_pomodoro(last_img=None):
@@ -213,7 +282,7 @@ def run_pomodoro(last_img=None):
         if k4.is_set():
             k4.clear(); return "idle", img
         if k3.is_set() and ts['active']:
-            k3.clear(); timer.full_stop(); return "idle", img
+            k3.clear(); return "confirm_end", img
         if k2.is_set() and ts['active']:
             k2.clear(); timer.skip()
         if k1.is_set():
@@ -226,8 +295,8 @@ def run_tasks(last_img=None):
     if last_img: fade(last_img)
     img  = Image.new("RGB", (W, H), (10, 10, 25))
     draw = ImageDraw.Draw(img)
-    draw.text((48, 90), "Tasks coming soon!", fill="white", font=FONT_MED)
-    draw.text((65, 218), "K1 Back    K4 Home", fill=(80, 80, 100), font=FONT_SMALL)
+    draw.text((48, 90),  "Tasks coming soon!", fill="white",       font=FONT_SMALL)
+    draw.text((65, 218), "K1 Back    K4 Home",  fill=(80, 80, 100), font=FONT_SMALL)
     write_lcd(img)
     while True:
         if k1.is_set() or k4.is_set():
@@ -237,9 +306,10 @@ def main():
     state, last_img = "idle", None
     print("Locked-In started!")
     while True:
-        if   state == "idle":     state, last_img = run_idle(last_img)
-        elif state == "pomodoro": state, last_img = run_pomodoro(last_img)
-        elif state == "tasks":    state, last_img = run_tasks(last_img)
+        if   state == "idle":        state, last_img = run_idle(last_img)
+        elif state == "pomodoro":    state, last_img = run_pomodoro(last_img)
+        elif state == "confirm_end": state, last_img = run_confirm_end(last_img)
+        elif state == "tasks":       state, last_img = run_tasks(last_img)
 
 if __name__ == "__main__":
     main()
