@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { signOut } from "firebase/auth"
+import { auth } from "./firebase"
 
 function ToDoList() {
   const [tasks, setTasks] = useState([])
@@ -37,6 +39,14 @@ function ToDoList() {
           Add
         </button>
       </form>
+
+      <button 
+        className="log-out-button"
+        onClick={() => signOut(auth)}
+        style={{ color: "red", position: "absolute", top: 10, left: 10, cursor: "pointer"}}
+        >
+        Log Out
+      </button>
       {tasks.length === 0 && (
         <p style={{ marginTop: 40, color: "grey", textAlign: "center" }}>
           No tasks yet. Add a task to get focused.
