@@ -267,6 +267,12 @@ def draw_pomodoro(ts):
     draw.text((208, 11), "BREAK" if "BREAK" in ts['mode'] else ts['mode'],
               fill=accent, font=FONT_SMALL)
     mins, secs = divmod(ts['time_left'], 60)
+
+    if not focus.is_focused() and ts['active'] and ts['mode'] == "FOCUS":
+        draw.rounded_rectangle([10, 50, 310, 72], radius=6, fill=(180, 40, 40))
+        draw.text((30, 55), "⚠ Come back! Timer paused.",
+                  fill="white", font=FONT_SMALL)
+
     if not ts['active']:
         timer_col = (85, 85, 105)
         draw.text((72, 57), "PRESS K1 TO START", fill=(175, 170, 95), font=FONT_TINY)
