@@ -5,6 +5,8 @@ import mmap
 import lgpio
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+from picamera2 import Picamera2
+import mediapipe as mp
 
 FB_DEVICE = "/dev/fb1"
 W, H = 320, 240
@@ -134,6 +136,61 @@ def _timer_thread():
             timer.tick()
             last = now
         time.sleep(0.05)
+
+# ── FOCUS MONITOR ─────────────────────────────────────────────
+
+class FocusMonitor:
+    def __init__(self):
+        self.focused    = True
+        self.away_since = None
+        self.AWAY_LIMIT = 3.0
+        self._lock      = threading.Lock()
+
+    def update(self, face_detected):
+        with self._lock:
+            if face_detected:
+                self.focused    = True
+                self.away_since = None
+            else:
+                if self.away_since is None:
+                    self.away_since = time.time()
+                if time.time() - self.away_since >= self.AWAY_LIMIT:
+                    self.focused = False
+
+    def is_focused(self):
+        with self._lock:
+            return self.focused
+
+focus = FocusMonitor()
+
+def _camera_thread():
+    cam = Picamera2()
+    cfg = cam.create_preview_configuration(
+        main={"size": (320, 240), "format": "RGB888"}
+    )
+    cam.configure(cfg)
+    cam.start()
+    time.sleep(1)
+    mp_face  = mp.solutions.face_detection
+    detector = mp_face.FaceDetection(min_detection_confidence=0.5)
+    was_focused = True
+    while True:
+        frame         = cam.capture_array()
+        results       = detector.process(frame)
+        face_detected = bool(results.detections)
+        focus.update(face_detected)
+        ts = timer.state()
+        if ts['active'] and ts['mode'] == "FOCUS":
+            if not focus.is_focused() and not ts['paused']:
+                timer.toggle_pause()
+                print("Auto-paused — user away")
+            elif focus.is_focused() and ts['paused'] and not was_focused:
+                timer.toggle_pause()
+                print("Auto-resumed — user back")
+        was_focused = focus.is_focused()
+        time.sleep(0.1)
+
+threading.Thread(target=_camera_thread, daemon=True).start()
 
 threading.Thread(target=_timer_thread, daemon=True).start()
 
