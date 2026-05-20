@@ -1,6 +1,5 @@
-import { useState, useEffect } from "react";
-import { signOut } from "firebase/auth";
-import { auth, database } from "./firebase";
+import { useState, useEffect } from "react"
+import { database } from "./firebase";
 import { collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc} from "firebase/firestore";
 
 function ToDoList({user}) {
@@ -68,7 +67,6 @@ function ToDoList({user}) {
         }
     }
     
-
     return (
     <div className = "to-do-list">
         <h1>Locked-In</h1>
@@ -89,19 +87,6 @@ function ToDoList({user}) {
                     Add
                 </button>  
             </form>
-
-            <button
-                className="log-out-button"
-                onClick={() => signOut(auth)}
-                style={{
-                    color: "red",
-                    position: "absolute",
-                    top: 10,
-                    left: 10,
-                    cursor: "pointer"
-                }}>
-                Log out
-            </button>
         </div>
 
         {/* When there are no tasks, show this message */}
