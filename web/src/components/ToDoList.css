@@ -26,3 +26,15 @@
     color: grey;
     text-align: center;
 }
+
+.task-description {
+    margin-top: 4px;
+    font-size: 14px;
+    color: #ccc;
+}
+
+.task-due {
+    margin-top: 4px;
+    font-size: 14px;
+    color: #ccc;
+}

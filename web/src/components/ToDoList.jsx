@@ -6,6 +6,9 @@ import "./ToDoList.css";
 function ToDoList({user}) {
     const[tasks, setTasks] = useState([]);
     const[newTask, setNewTask] = useState("");
+    const[newDesc, setNewDesc] = useState("");
+    const[newDueDate, setNewDueDate] = useState("");
+    const[newDueTime, setNewDueTime] = useState("");
 
     useEffect(() => { //To load tasks from the database in real time
         if (!user) return;
@@ -21,16 +24,22 @@ function ToDoList({user}) {
         return collection(database, "users", user.uid, "tasks");
     }
 
-    async function addTask(event) {
+    async function addTask(event) { //Also allows the user to key in due date and time, and description
         event.preventDefault();
         if (newTask.trim() !== "") {
             const newAdd = crypto.randomUUID(); //Used to generate a unique id for each task for the database and also helps with React's rendering 
             await setDoc(doc(tasksReference(), newAdd), {
                 text: newTask,
+                description: newDesc,
+                dueDate: newDueDate,
+                dueTime: newDueTime,
                 done: false,
                 order: tasks.length
             });
             setNewTask("");
+            setNewDesc("");
+            setNewDueDate("");
+            setNewDueTime("");
         }
     }
 
@@ -70,16 +79,55 @@ function ToDoList({user}) {
     
     return (
     <div className = "to-do-list">
+        { /* Header and title */ }
         <h1>Locked-In</h1>
         <h2>To do list</h2>
+
+        { /* To key in new tasks, descriptions, due dates and times */ }
         <div>
-            <form onSubmit={addTask}>
-                <input
-                    type="text"
-                    placeholder="Enter a task"
-                    value={newTask}
-                    onChange={(event) => setNewTask(event.target.value)}/>
-                <button className="add-button">Add</button>  
+            <form onSubmit={addTask} className="task-form">
+
+                {/* Task name and description input fields */}
+                <div className="task-form-row">
+                    <input
+                        className="task-input task-name"
+                        type="text"
+                        placeholder="Enter a task"
+                        value={newTask}
+                        onChange={(event) => setNewTask(event.target.value)}
+                    />
+                    <input
+                        className="task-input task-description"
+                        type="text"
+                        placeholder="Description (optional)"
+                        value={newDesc}
+                        onChange={(event) => setNewDesc(event.target.value)}
+                    />
+                </div>
+
+                {/* Due date and time input fields */}
+                <div className="task-form-row">
+                    <label className="task-label">
+                        Due date:
+                        <input
+                            className="task-input task-due-date"
+                            type="date"
+                            value={newDueDate}
+                            onChange={(event) => setNewDueDate(event.target.value)}
+                        />
+                    </label>    
+                    <label className="task-label">
+                        Due time:
+                        <input
+                            className="task-input task-due-time"
+                            type="time"
+                            value={newDueTime}
+                            onChange={(event) => setNewDueTime(event.target.value)}
+                        />
+                    </label>
+                    <button className="add-button">Add</button>
+                </div>
+
             </form>
         </div>
 
@@ -100,6 +148,13 @@ function ToDoList({user}) {
                     <span className={task.done ? "text done" : "text"}>
                         {task.text}
                     </span>
+
+                    {task.description && <p className="description">{task.description}</p>}
+                    {(task.dueDate || task.dueTime) && (
+                        <div className="task-due">
+                            Due: {task.dueDate} {task.dueTime} 
+                        </div>
+                    )}
 
                     <button className="delete-button" onClick={() => deleteTask(index)}>Delete</button>
                     <button className="move-button" onClick={() => moveTaskUp(index)}>Move up</button>
