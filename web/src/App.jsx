@@ -2,7 +2,7 @@ import { useState, useEffect } from "react"
 import { onAuthStateChanged } from "firebase/auth"
 import { auth } from "./firebase"
 import Login from "./LoginAndRegistration"
-import ToDoList from "./ToDoList"
+import ToDoList from "./components/ToDoList"
 import SideBar from "./components/SideBar"
 
 export default function App() {

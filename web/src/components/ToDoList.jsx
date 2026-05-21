@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
-import { database } from "./firebase";
+import { database } from "../firebase";
 import { collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc} from "firebase/firestore";
+import "./ToDoList.css";
 
 function ToDoList({user}) {
     const[tasks, setTasks] = useState([]);
@@ -78,22 +79,13 @@ function ToDoList({user}) {
                     placeholder="Enter a task"
                     value={newTask}
                     onChange={(event) => setNewTask(event.target.value)}/>
-                <button
-                    className="add-button"
-                    style={{
-                        marginLeft: "10px",
-                        cursor: "pointer"
-                    }}>
-                    Add
-                </button>  
+                <button className="add-button">Add</button>  
             </form>
         </div>
 
         {/* When there are no tasks, show this message */}
-        {tasks.length === 0 && ( 
-        <p style={{marginTop: 40, color: "grey", textAlign: "center"}}>
-        No tasks yet. Add a task to get focused. 
-        </p>
+        {tasks.length === 0 && (
+            <p className="no-tasks-message">No tasks yet. Add a task to get focused.</p>
         )}
 
         <ol>
@@ -104,47 +96,14 @@ function ToDoList({user}) {
                         checked={task.done}
                         onChange={() => toggleTaskDone(index)}
                     />
-                    <span
-                        className="text"
-                        style={{
-                            textDecoration: task.done ? "line-through" : "none",
-                            color: task.done ? "grey" : "white",
-                            marginLeft: "8px",
-                        }}
-                    >
+
+                    <span className={task.done ? "text done" : "text"}>
                         {task.text}
                     </span>
 
-                    <button
-                        className="delete-button"
-                        onClick={() => deleteTask(index)}
-                        style={{
-                            marginLeft: "10px",
-                            cursor: "pointer"
-                            }}
-                        >
-                        Delete
-                    </button>
-                    <button
-                        className="move-button"
-                        onClick={() => moveTaskUp(index)}
-                        style={{
-                            marginLeft: "10px",
-                            cursor: "pointer"    
-                            }}
-                        >
-                        Move up
-                    </button>
-                    <button
-                        className="move-button"
-                        onClick={() => moveTaskDown(index)}
-                        style={{
-                            marginLeft: "10px",
-                            cursor: "pointer"
-                            }}
-                        >
-                        Move down
-                    </button>
+                    <button className="delete-button" onClick={() => deleteTask(index)}>Delete</button>
+                    <button className="move-button" onClick={() => moveTaskUp(index)}>Move up</button>
+                    <button className="move-button" onClick={() => moveTaskDown(index)}>Move down</button>
                 </li>
             )}
         </ol>

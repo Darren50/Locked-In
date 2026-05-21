@@ -41,9 +41,9 @@ function SideBar() {
                 </button>
                 {isOpen && (
                     <div className="sidebar-buttons">
+                        <button onClick={() => setActiveView("calendar")}>Calendar</button>
                         <button onClick={() => setActiveView("statistics")}>Statistics</button>
                         <button onClick={() => setActiveView("graphs")}>Graphs</button>
-                        <button onClick={() => setActiveView("calendar")}>Calendar</button>
                         <button onClick={() => signOut(auth)}>Log out</button>
                     </div>
                 )}

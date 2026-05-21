@@ -11,11 +11,11 @@
 }
 
 .sidebar.closed {
-    width: 40px;
+    width: 50px;
 }
 
 .sidebar.open {
-    width: 220px;
+    width: 200px;
 }
 
 .sidebar-toggle {
@@ -37,8 +37,8 @@
 
 .sidebar-buttons button {
     padding: 10px;
-    background: #2e303a;
-    color: white;
+    background: white;
+    color: black;
     border: none;
     border-radius: 6px;
     cursor: pointer;
@@ -46,7 +46,7 @@
 }
 
 .sidebar-buttons button:hover {
-    background: #aa3bff;
+    background: grey;
 }
 
 .sidebar-panel {
@@ -54,12 +54,12 @@
     top: 0;
     left: 220px;
     padding: 20px;
-    background: #16171d;
+    background: transparent;
+    border-right: transparent;
     color: white;
     height: 100vh;
     width: 320px;
     z-index: 9;
-    border-right: 1px solid #2e303a;
 }
 
 .sidebar-panel .react-calendar {
