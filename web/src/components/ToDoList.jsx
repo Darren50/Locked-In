@@ -145,6 +145,7 @@ function ToDoList({user}) {
                         onChange={() => toggleTaskDone(index)}
                     />
 
+                    {/* If task is done, do a strikethrough */}
                     <span className={task.done ? "text done" : "text"}>
                         {task.text}
                     </span>

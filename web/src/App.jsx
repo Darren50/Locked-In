@@ -23,7 +23,7 @@ export default function App() {
 
   return user ? (
     <div className="app">
-      <SideBar />
+      <SideBar user={user} />
       <ToDoList user={user} />
     </div>
   ) : (
