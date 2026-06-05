@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { auth, database } from "../firebase";
-import { collection, onSnapshot } from "firebase/firestore";
+import { collection, onSnapshot, doc } from "firebase/firestore";
+import { setDoc, increment } from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./SideBar.css";
@@ -11,6 +12,7 @@ function SideBar({user}) {
     const [activeView, setActiveView] = useState("calendar");
     const [date, setDate] = useState(new Date());
     const [tasks, setTasks] = useState([]);
+    const [stats, setStats] = useState({ totalFocusMinutes: 0, totalSessions: 0 });
 
     useEffect(() => { //To load tasks from the database in real time for the calendar view
         if (!user) return;
@@ -23,6 +25,17 @@ function SideBar({user}) {
         return unsubscribe;
     }, [user]);
 
+    useEffect(() => { //To load the focus statistics in real time for the statistics view
+        if (!user) return;
+        const statsDoc = doc(database, "users", user.uid, "stats", "summary");
+        const unsubscribe = onSnapshot(statsDoc, (snapshot) => {
+            if (snapshot.exists()) {
+                setStats(snapshot.data());
+                }
+            });
+        return unsubscribe;
+    }, [user]);
+
     function tasksOnDate(checkDate) { //To filter tasks that are due on the selected date in the calendar view
         const yyyy = checkDate.getFullYear();
         const mm = String(checkDate.getMonth() + 1).padStart(2, '0');
@@ -31,13 +44,45 @@ function SideBar({user}) {
         return tasks.filter(task => task.dueDate === dateString);
     }
 
+    async function addTestSession() {
+        const statsDoc = doc(database, "users", user.uid, "stats", "summary");
+        await setDoc(
+            statsDoc,
+            {
+                totalFocusMinutes: increment(25),
+                totalSessions: increment(1),
+                lastSessionAt: new Date().toISOString()
+            },
+            { merge: true }
+        );
+    }
+
     function panel() {
         {/* Placeholder for statistics and graphs views, work in progress */}
         if (activeView === "statistics") {
-            return <div className="sidebar-panel">
-                <h2>Statistics</h2>
-                <p>WIP</p>
-            </div>
+            const hours = Math.floor((stats.totalFocusMinutes || 0) / 60);
+            const minutes = (stats.totalFocusMinutes || 0) % 60;
+            return (
+                <div className="sidebar-panel">
+                    <h2>Statistics</h2>
+                    <div className="stat-card">
+                        <div className="stat-value">{hours}h {minutes}m</div>
+                        <div className="stat-label">Total focused time</div>
+                    </div>
+                    <div className="stat-card">
+                        <div className="stat-value">{stats.totalSessions || 0}</div>
+                        <div className="stat-label">Pomodoro sessions completed</div>
+                    </div>
+                    {stats.lastSessionAt && (
+                        <p className="stat-note">
+                            Last session: {new Date(stats.lastSessionAt).toLocaleString()}
+                        </p>
+                    )}
+                    <button className="dev-add-session" onClick={addTestSession}>
+                        + Add test session
+                    </button>
+                </div>
+            );
         }
 
         if (activeView === "graphs") {

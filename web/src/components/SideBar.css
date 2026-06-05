@@ -54,7 +54,7 @@
     top: 0;
     left: 220px;
     padding: 20px;
-    background: #1f2028;
+    background: transparent;
     border-right: transparent;
     color: white;
     height: 100vh;
@@ -96,6 +96,46 @@
     color: #aaa;
 }
 
+/* Styles for statistics in the sidebar calendar view panel */
+.stat-card {
+    background: #1f2028;
+    border: 1px solid #2e303a;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 12px;
+    text-align: center;
+}
+
+.stat-value {
+    font-size: 32px;
+    font-weight: 600;
+    color: white;
+}
+
+.stat-label {
+    font-size: 13px;
+    color: #9ca3af;
+    margin-top: 4px;
+}
+
+.stat-note {
+    font-size: 12px;
+    color: #9ca3af;
+    text-align: center;
+    margin-top: 8px;
+}
+
+.dev-add-session {
+    margin-top: 16px;
+    padding: 8px 12px;
+    background: #2e303a;
+    color: #9ca3af;
+    border: 1px dashed white;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 100%;
+}
+
 .sidebar-panel .react-calendar {
     color: #1f2028;
 }
@@ -116,3 +156,4 @@
 .sidebar-panel .react-calendar__tile--active {
     color: white;
 }
+
