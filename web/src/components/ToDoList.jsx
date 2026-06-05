@@ -77,6 +77,12 @@ function ToDoList({user}) {
         }
     }
     
+    function isOverdue(task) {
+        if (task.done || !task.dueDate) return false; //Done or no date means not overdue
+        const dueString = `${task.dueDate}T${task.dueTime || "23:59"}`; //Default to end of day if no time
+        return new Date(dueString) < new Date();
+    }
+
     return (
     <div className = "to-do-list">
         { /* Header and title */ }
@@ -152,8 +158,9 @@ function ToDoList({user}) {
 
                     {task.description && <p className="description">{task.description}</p>}
                     {(task.dueDate || task.dueTime) && (
-                        <div className="task-due">
+                        <div className={isOverdue(task) ? "task-due overdue" : "task-due"}>
                             Due: {task.dueDate} {task.dueTime} 
+                            {isOverdue(task) && <span className="overdue-badge">Overdue</span>}
                         </div>
                     )}
 

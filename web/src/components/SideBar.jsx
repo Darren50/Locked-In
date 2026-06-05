@@ -44,6 +44,12 @@ function SideBar({user}) {
         return tasks.filter(task => task.dueDate === dateString);
     }
 
+    function isOverdue(task) {
+        if (task.done || !task.dueDate) return false;
+            const dueString = `${task.dueDate}T${task.dueTime || "23:59"}`;
+            return new Date(dueString) < new Date();
+    }
+
     async function addTestSession() {
         const statsDoc = doc(database, "users", user.uid, "stats", "summary");
         await setDoc(
@@ -116,8 +122,9 @@ function SideBar({user}) {
                         ) : (
                             <ul>
                                 {tasksForSelected.sort((a, b) => (a.dueTime || "").localeCompare(b.dueTime || "")).map(t => (
-                                    <li key={t.id}>
+                                    <li key={t.id} className={isOverdue(t) ? "cal-task overdue" : "cal-task"}>
                                         <strong>{t.text}</strong>
+                                        {isOverdue(t) && <span className="overdue-badge">Overdue</span>}
                                         {t.description && <div className="cal-task-desc">{t.description}</div>}
                                         {t.dueTime && <div className="cal-task-time">{t.dueTime}</div>}
                                     </li>
