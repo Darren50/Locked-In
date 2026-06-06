@@ -4,7 +4,7 @@
 
 ### Hardware Required
 
-# If you do not have any/all the required hardware, please refer to our video to see the bot 😃
+### If you do not have any/all the required hardware, please refer to our video to see the bot 😃
 
 - Raspberry Pi 5
 - Waveshare 2.8" LCD (A) HAT (ILI9341, 320x240)
