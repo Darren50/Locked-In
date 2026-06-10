@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { signOut } from "firebase/auth";
 import { auth, database } from "../firebase";
-import { collection, onSnapshot, doc } from "firebase/firestore";
-import { setDoc, increment } from "firebase/firestore";
+import { collection, onSnapshot, doc, setDoc, addDoc, increment} from "firebase/firestore";
 import Calendar from "react-calendar";
 import "react-calendar/dist/Calendar.css";
 import "./SideBar.css";
@@ -13,6 +12,7 @@ function SideBar({user}) {
     const [date, setDate] = useState(new Date());
     const [tasks, setTasks] = useState([]);
     const [stats, setStats] = useState({ totalFocusMinutes: 0, totalSessions: 0 });
+    const [sessions, setSessions] = useState([]);
 
     useEffect(() => { //To load tasks from the database in real time for the calendar view
         if (!user) return;
@@ -36,6 +36,15 @@ function SideBar({user}) {
         return unsubscribe;
     }, [user]);
 
+    useEffect(() => { //To load individual Pomodoro sessions for the weekly graph
+    if (!user) return;
+    const sessionsCollection = collection(database, "users", user.uid, "sessions");
+    const unsubscribe = onSnapshot(sessionsCollection, (snapshot) => {
+        setSessions(snapshot.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return unsubscribe;
+}, [user]);
+
     function tasksOnDate(checkDate) { //To filter tasks that are due on the selected date in the calendar view
         const yyyy = checkDate.getFullYear();
         const mm = String(checkDate.getMonth() + 1).padStart(2, '0');
@@ -50,17 +59,53 @@ function SideBar({user}) {
             return new Date(dueString) < new Date();
     }
 
+    function getWeekData() {
+        const now = new Date();
+        const day = now.getDay();                       //0 = Sun, 1 = Mon, etc.
+        const diffToMonday = (day === 0 ? -6 : 1 - day); //Shift back to Monday (or Sunday if today is Sunday)
+        const monday = new Date(now);
+        monday.setHours(0, 0, 0, 0);
+        monday.setDate(now.getDate() + diffToMonday);
+
+        const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+        return labels.map((label, i) => {
+            const dayStart = new Date(monday);
+            dayStart.setDate(monday.getDate() + i);
+            const dayEnd = new Date(dayStart);
+            dayEnd.setDate(dayStart.getDate() + 1);
+
+            const daySessions = sessions
+                .filter(s => {
+                    const t = new Date(s.startedAt);
+                    return t >= dayStart && t < dayEnd;
+                })
+                .sort((a, b) => new Date(a.startedAt) - new Date(b.startedAt));
+
+            const focusMinutes = daySessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+
+            // Pomodoro breaks: 5 min after each session, 15 min after every 4th
+            let breakMinutes = 0;
+            daySessions.forEach((s, idx) => {
+                breakMinutes += ((idx + 1) % 4 === 0) ? 15 : 5;
+            });
+
+            return { label, focusMinutes, breakMinutes, sessionCount: daySessions.length };
+        });
+    }
+
     async function addTestSession() {
+        //Individual session record for weekly graph
+        await addDoc(collection(database, "users", user.uid, "sessions"), {
+            startedAt: new Date().toISOString(),
+            durationMinutes: 25
+        });
+        //Summary for statistics
         const statsDoc = doc(database, "users", user.uid, "stats", "summary");
-        await setDoc(
-            statsDoc,
-            {
-                totalFocusMinutes: increment(25),
-                totalSessions: increment(1),
-                lastSessionAt: new Date().toISOString()
-            },
-            { merge: true }
-        );
+        await setDoc(statsDoc, {
+            totalFocusMinutes: increment(25),
+            totalSessions: increment(1),
+            lastSessionAt: new Date().toISOString()
+        }, { merge: true });
     }
 
     function panel() {
@@ -92,10 +137,38 @@ function SideBar({user}) {
         }
 
         if (activeView === "graphs") {
-            return <div className="sidebar-panel">
-                <h2>Graphs</h2>
-                <p>WIP</p>
-            </div>
+            const week = getWeekData();
+            const maxMinutes = Math.max(60, ...week.map(d => d.focusMinutes + d.breakMinutes));
+            return (
+                <div className="sidebar-panel">
+                    <h2>Weekly Focus</h2>
+                    <div className="bar-chart">
+                        {week.map(d => {
+                            const focusPct = (d.focusMinutes / maxMinutes) * 100;
+                            const breakPct = (d.breakMinutes / maxMinutes) * 100;
+                            return (
+                                <div className="bar-column" key={d.label}>
+                                    <div className="bar-stack">
+                                        <div className="bar-break" style={{ height: `${breakPct}%` }}
+                                            title={`Break: ${d.breakMinutes} min`}></div>
+                                        <div className="bar-focus" style={{ height: `${focusPct}%` }}
+                                            title={`Focus: ${d.focusMinutes} min · ${d.sessionCount} sessions`}></div>
+                                    </div>
+                                    <div className="bar-label">{d.label}</div>
+                                    <div className="bar-total">{d.focusMinutes}m</div>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <div className="chart-legend">
+                        <span><span className="legend-swatch focus"></span> Focus</span>
+                        <span><span className="legend-swatch break"></span> Break</span>
+                    </div>
+                    <button className="dev-add-session" onClick={addTestSession}>
+                        + Add test session
+                    </button>
+                </div>
+            );
         }
 
         {/* Calendar view */}
