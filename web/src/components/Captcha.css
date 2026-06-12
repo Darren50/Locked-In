@@ -1,0 +1,25 @@
+.captcha-gate {
+    max-width: 360px;
+    margin: 100px auto;
+    text-align: center;
+}
+
+.captcha-gate .captcha-wrap {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+}
+
+.captcha-gate button {
+    padding: 10px 24px;
+    border-radius: 6px;
+    border: none;
+    background: white;
+    color: #333;
+    cursor: pointer;
+}
+
+.captcha-gate button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
