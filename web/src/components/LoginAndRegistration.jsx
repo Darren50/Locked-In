@@ -7,6 +7,7 @@ import {
 } from "firebase/auth"; 
 import { auth } from "../firebase";
 import "./LoginAndRegistration.css";
+import googleLogo from "../assets/google-logo.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -41,8 +42,9 @@ export default function Login() {
   return (
     <div className="login-container">
       <h1>Locked-In</h1>
-      <h2>{isSignUp ? "Sign up page" : "Log in page"}</h2>
-
+      <h2>{isSignUp ? "Sign up" : "Welcome back"}</h2>
+      <h5>Please enter your details</h5>  
+      
       {/*Email sign in/up*/}
       <form onSubmit={handleEmail}>
         <input
@@ -63,7 +65,7 @@ export default function Login() {
         </div>
 
         <button 
-          type="submit" 
+          type="submit"
           className="submit-button">
           {isSignUp ? "Create account" : "Log in"}
         </button>
@@ -73,7 +75,9 @@ export default function Login() {
         type="button"
         onClick={handleGoogle}
         className="google-button"
-        >Continue with Google
+      >
+        <img src={googleLogo} alt="Google Logo" />
+        Sign in with Google
       </button>
 
       {error && <p className="login-error">{error}</p>}
