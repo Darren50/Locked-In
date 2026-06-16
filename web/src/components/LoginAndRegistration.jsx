@@ -11,15 +11,20 @@ import {
 } from "firebase/auth"; 
 import { auth } from "../firebase";
 import "./LoginAndRegistration.css";
+
+/* Assets */
 import googleLogo from "../assets/google-logo.png";
+import viewPassword from "../assets/view-password.png";
+import hidePassword from "../assets/hide-password.png";
 
 export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
   const [notice, setNotice] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
 
   /* Handle email sign in/up */ 
   const handleEmail = async (e) => { 
@@ -87,14 +92,26 @@ export default function Login() {
           onChange={(e) => setEmail(e.target.value)}
           required
         />
-        <div>
+        
+        <div className="password-field">
           <input
-            type="password"
+            type={showPassword ? "text" : "password"}
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
+          <button
+            type="button"
+            className="password-toggle"
+            onClick={() => setShowPassword(!showPassword)}
+            aria-label={showPassword ? "Hide password" : "Show password"}
+          >
+            <img
+              src={showPassword ? hidePassword : viewPassword}
+              alt=""
+            />
+          </button>
         </div>
 
         {/* Remember me and forgot password options */}
