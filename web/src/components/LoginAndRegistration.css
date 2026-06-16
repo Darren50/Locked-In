@@ -174,7 +174,55 @@
     }
 }
 
-/* Animation */
+/* Remember me and forgot password */
+.login-container .form-options {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    font-size: 13px;
+}
+
+/* Remember me checkbox and label */
+.login-container .remember-me {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: #475467;
+    cursor: pointer;
+}
+
+/* Global input override */
+.login-container .remember-me input {
+    width: auto;
+    margin: 0;
+}
+
+/* Forgot password link */
+.login-container .forgot-link {
+    background: none;
+    border: none;
+    color: #2563eb;
+    cursor: pointer;
+    font-size: 13px;
+    padding: 0;
+}
+
+/* Hover effect for forgot password link */
+.login-container .forgot-link:hover {
+    text-decoration: underline;
+}
+
+/* Notice */
+.login-container .login-notice {
+    order: 4;
+    color: #16a34a;
+    font-size: 13px;
+    margin: 0;
+}
+
+
+/* Animations */
 
 /* Staggered entrance */
 @keyframes fadeSlideUp {
@@ -188,6 +236,7 @@
 .login-container .google-button,
 .login-container form,
 .login-container .login-error,
+.login-container .login-notice,
 .login-container .toggle-link {
     animation: fadeSlideUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
