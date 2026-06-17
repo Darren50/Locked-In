@@ -256,15 +256,6 @@
     text-decoration: underline;
 }
 
-/* Notice */
-.login-container .login-notice {
-    order: 4;
-    color: #16a34a;
-    font-size: 13px;
-    margin: 0;
-}
-
-
 /* Animations */
 
 /* Staggered entrance */
@@ -279,7 +270,6 @@
 .login-container .google-button,
 .login-container form,
 .login-container .login-error,
-.login-container .login-notice,
 .login-container .toggle-link {
     animation: fadeSlideUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
 }

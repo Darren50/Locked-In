@@ -7,10 +7,10 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
-  sendPasswordResetEmail
 } from "firebase/auth"; 
 import { auth } from "../firebase";
 import "./LoginAndRegistration.css";
+import ForgotPassword from "./ForgotPassword";
 
 /* Assets */
 import googleLogo from "../assets/google-logo.png";
@@ -23,14 +23,19 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
   const [error, setError] = useState("");
-  const [notice, setNotice] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
 
   /* Handle email sign in/up */ 
   const handleEmail = async (e) => { 
     e.preventDefault();
     setError("");
-    setNotice("");
+
+    if (!email || !password) {
+      setError("Please enter your email and password.")
+      return;
+    }
+
     try {
       await setPersistence(
         auth, 
@@ -41,10 +46,22 @@ export default function Login() {
       } else {
         await signInWithEmailAndPassword(auth, email, password);
       }
-    } catch {
-      setError("Your email and password do not match. Please try again.");
-    }
-  };
+    } catch (err) {
+        if (isSignUp) {
+          if (err.code === "auth/email-already-in-use") {
+            setError("That email is already registered.")
+          } else if (err.code === "auth/weak-password") {
+            setError("Password should be at least 6 characters.")
+          } else if (err.code === "auth/invalid-email") {
+            setError("Please enter a valid email address.")
+          } else {
+            setError("Could not create account. Please try again.")
+          }
+        } else {
+            setError("Your email and password do not match.")
+        }
+    };
+  }
 
   /* Handle Google sign in */
   const handleGoogle = async () => {
@@ -62,20 +79,9 @@ export default function Login() {
   };
 
   /* Handle forgot password */
-  const handleForgotPassword = async () => {
-    setError("");
-    setNotice("");
-    if (!email) {
-      setError("Please enter your email to reset the password");
-      return;
-    }
-    try {
-      await sendPasswordResetEmail(auth, email);
-      setNotice("Password reset email sent. Please check your inbox");
-    } catch {
-      setError("Failed to send password reset email. Please try again.");
-    }
-  };
+  if (showForgot) {
+    return <ForgotPassword onBack={() => setShowForgot(false)} />;
+  }
 
   return (
     <div className="login-container">
@@ -84,7 +90,7 @@ export default function Login() {
       <h5>Please enter your details</h5>  
       
       {/* Email sign in/up */}
-      <form onSubmit={handleEmail}>
+      <form onSubmit={handleEmail} noValidate>
         <input
           type="email"
           placeholder="Email"
@@ -122,14 +128,15 @@ export default function Login() {
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
             />
-            Remember me
+            Remember Me
           </label>
           {!isSignUp && (
             <button 
               type="button" 
               className="forgot-link" 
-              onClick={handleForgotPassword}>
-              Forgot password?
+              onClick={() => setShowForgot(true)}
+            >
+            Forgot Password?
             </button>
           )}
         </div>
@@ -137,7 +144,7 @@ export default function Login() {
         <button 
           type="submit"
           className="submit-button">
-          {isSignUp ? "Create account" : "Log in"}
+          {isSignUp ? "Create Account" : "Log In"}
         </button>
       </form>
 
@@ -151,7 +158,6 @@ export default function Login() {
       </button>
 
       {error && <p className="login-error">{error}</p>}
-      {notice && <p className="login-notice">{notice}</p>}
 
       <button 
         className="toggle-link" 
