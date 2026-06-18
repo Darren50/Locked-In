@@ -1,56 +1,267 @@
-.to-do-list ol {
-    max-width: 400px;
-    margin: 20px auto;
-    padding-left: 50px;
-    text-align: left;
+/* Design */
+
+/* Background color */
+body {
+    margin: 0;
+    background: #f4f5f7;
 }
 
-.to-do-list button {
-    margin-left: 10px;
+/* To do list */
+.to-do-list {
+    max-width: 700px;
+    margin: 0 auto;
+    padding: 40px 20px 80px;
+    text-align: left;
+    font-family: var(--sans);
+}
+
+/* Header */
+.todo-header {
+    text-align: center;
+    margin-bottom: 28px;
+}
+.todo-header h1 {
+    font-size: 40px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+/* Subtitle */
+.todo-subtitle {
+    font-size: 15px;
+    color: #98a2b3;
+    margin: 4px 0 0;
+}
+
+/* Add task card */
+.task-form {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 16px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 28px;
+    animation: todoFadeUp 0.5s ease both;
+}
+.task-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1px solid #d0d5dd;
+    border-radius: 8px;
+    font-size: 14px;
+    font-family: inherit;
+    color: #111827;
+    background: #fff;
+    box-sizing: border-box;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.task-input::placeholder { 
+    color: #98a2b3; 
+}
+.task-input:focus {
+    outline: none;
+    border-color: #111827;
+    box-shadow: 0 0 0 3px rgba(17, 24, 39, 0.08)
+}
+.task-name { 
+    font-size: 15px; 
+    font-weight: 500;
+}
+.task-form-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 12px;
+}
+.task-label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 12px;
+    color: #98a2b3;
+    flex: 1;
+}
+.add-button {
+    padding: 11px 18px;
+    background: #111827;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.add-button:hover {
+    background: #000;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(17, 24, 39, 0.25);
+}
+.add-button:active { 
+    transform: translateY(0); 
+    box-shadow: none; 
+}
+.no-tasks-message {
+    text-align: center;
+    color: #98a2b3;
+    font-size: 15px;
+    margin-top: 40px;
+}
+
+/* Task card */
+.task-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+.task-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    transition: transform 0.15s ease, box-shadow 0.2s ease;
+    animation: todoFadeUp 0.4s ease both;
+}
+.task-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.08);
+}
+.task-card.done { 
+    opacity: 0.6; 
+}
+
+/* Custom checkbox */
+.task-check {
+    position: relative;
+    display: flex;
+    align-items: center;
+    margin-top: 2px;
     cursor: pointer;
 }
-
-.to-do-list .text {
-    margin-left: 8px;
-    color: white;
-    text-align: center;
+.task-check input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+.checkmark {
+    width: 20px;
+    height: 20px;
+    border: 2px solid #d0d5dd;
+    border-radius: 6px;
+    display: inline-block;
+    position: relative;
+    transition: background 0.2s ease, border-color 0.2s ease;
+}
+.task-check input:checked + .checkmark {
+    background: #16a34a; 
+    border-color: #16a34a;
+}
+.task-check input:checked + .checkmark::after {
+    content: "";
+    position: absolute;
+    left: 6px;
+    top: 2px;
+    width: 4px;
+    height: 9px;
+    border: solid #fff;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
 }
 
-.to-do-list .text.done {
-    text-decoration: line-through;
-    color: grey;
+/* Content */
+.task-content { 
+    flex: 1; 
+    min-width: 0; 
 }
-
-.no-tasks-message {
-    margin-top: 40px;
-    color: grey;
-    text-align: center;
+.task-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: #111827;
 }
-
-.task-description {
-    margin-top: 4px;
-    font-size: 14px;
-    color: #ccc;
+.task-card.done .task-text {
+    color: #98a2b3;
 }
-
-.task-due {
-    margin-top: 4px;
-    font-size: 14px;
-    color: #ccc;
+.task-desc {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 4px 0 0;
 }
-
-/* Styles for overdue tasks in the to-do list */
-.task-due.overdue {
-    color: #ff5252;
+.due-chip {
+    display: inline-block;
+    margin-top: 8px;
+    padding: 3px 8px;
+    background: #e9eaec;
+    color: #6b7280;
+    border-radius: 6px;
+    font-size: 12px;
+}
+.due-chip.overdue {
+    background: #fee2e2;
+    color: #dc2626;
     font-weight: 500;
 }
 
-.overdue-badge {
-    margin-left: 8px;
-    padding: 2px 6px;
-    background: #ff5252;
-    color: white;
-    border-radius: 4px;
-    font-size: 11px;
-    font-weight: 600;
+/* Hover effect of action buttons */
+.task-actions {
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+}
+.task-card:hover .task-actions { 
+    opacity: 1; 
+}
+.icon-button {
+    width: 28px;
+    height: 28px;
+    border: none;
+    border-radius: 6px;
+    background: #f3f4f6;
+    color: #6b7280;
+    cursor: pointer;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+.icon-button:hover { 
+    background: #e5e7eb; 
+    color: #111827; 
+}
+.icon-button.delete:hover { 
+    background: #fee2e2; 
+    color: #dc2626; 
+}
+
+/* Animations */
+
+/* Staggered entrance */
+.task-card:nth-child(1) { animation-delay: 0.00s; }
+.task-card:nth-child(2) { animation-delay: 0.04s; }
+.task-card:nth-child(3) { animation-delay: 0.08s; }
+.task-card:nth-child(4) { animation-delay: 0.12s; }
+.task-card:nth-child(5) { animation-delay: 0.16s; }
+.task-card:nth-child(6) { animation-delay: 0.20s; }
+
+@keyframes todoFadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Users who prefer no motion */
+@media (prefers-reduced-motion: reduce) {
+    .task-form, .task-card { animation: none; }
+    .task-card:hover { transform: none; }
 }

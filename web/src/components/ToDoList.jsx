@@ -24,8 +24,8 @@ function ToDoList({user}) {
         return collection(database, "users", user.uid, "tasks");
     }
 
-    async function addTask(event) { //Also allows the user to key in due date and time, and description
-        event.preventDefault();
+    async function addTask(e) { //Also allows the user to key in due date and time, and description
+        e.preventDefault();
         if (newTask.trim() !== "") {
             const newAdd = crypto.randomUUID(); //Used to generate a unique id for each task for the database and also helps with React's rendering 
             await setDoc(doc(tasksReference(), newAdd), {
@@ -84,94 +84,83 @@ function ToDoList({user}) {
     }
 
     return (
-    <div className = "to-do-list">
-        { /* Header and title */ }
-        <h1>Locked-In</h1>
-        <h2>To do list</h2>
+        <div className="to-do-list">
+            {/* Header and subtitle */}
+            <header className="todo-header">
+                <h1>Locked-In</h1>
+                <p className="todo-subtitle">Stay Focused. Get Things Done.</p>
+            </header>
 
-        { /* To key in new tasks, descriptions, due dates and times */ }
-        <div>
+            {/* Handle task card */}
             <form onSubmit={addTask} className="task-form">
-
-                {/* Task name and description input fields */}
-                <div className="task-form-row">
-                    <input
-                        className="task-input task-name"
-                        type="text"
-                        placeholder="Enter a task"
-                        value={newTask}
-                        onChange={(event) => setNewTask(event.target.value)}
-                    />
-                    <input
-                        className="task-input task-description"
-                        type="text"
-                        placeholder="Description (optional)"
-                        value={newDesc}
-                        onChange={(event) => setNewDesc(event.target.value)}
-                    />
-                </div>
-
-                {/* Due date and time input fields */}
+                <input
+                    className="task-input task-name"
+                    type="text"
+                    placeholder="What needs to be done?"
+                    value={newTask}
+                    onChange={(e) => setNewTask(e.target.value)}
+                />
+                <input
+                    className="task-input task-description"
+                    type="text"
+                    placeholder="Add a description (optional)"
+                    value={newDesc}
+                    onChange={(e) => setNewDesc(e.target.value)}
+                />
                 <div className="task-form-row">
                     <label className="task-label">
-                        Due date:
-                        <input
-                            className="task-input task-due-date"
-                            type="date"
-                            value={newDueDate}
-                            onChange={(event) => setNewDueDate(event.target.value)}
-                        />
-                    </label>    
-                    <label className="task-label">
-                        Due time:
-                        <input
-                            className="task-input task-due-time"
-                            type="time"
-                            value={newDueTime}
-                            onChange={(event) => setNewDueTime(event.target.value)}
-                        />
+                        Due date
+                        <input className="task-input" type="date" value={newDueDate}
+                            onChange={(e) => setNewDueDate(e.target.value)} />
                     </label>
-                    <button className="add-button">Add</button>
+                    <label className="task-label">
+                        Due time
+                        <input className="task-input" type="time" value={newDueTime}
+                            onChange={(e) => setNewDueTime(e.target.value)} />
+                    </label>
+                    <button className="add-button" type="submit">+ Add task</button>
                 </div>
-
             </form>
-        </div>
 
-        {/* When there are no tasks, show this message */}
-        {tasks.length === 0 && (
-            <p className="no-tasks-message">No tasks yet. Add a task to get focused.</p>
-        )}
-
-        <ol>
-            {tasks.map((task, index) => 
-                <li key={index}>
-                    <input
-                        type="checkbox" 
-                        checked={task.done}
-                        onChange={() => toggleTaskDone(index)}
-                    />
-
-                    {/* If task is done, do a strikethrough */}
-                    <span className={task.done ? "text done" : "text"}>
-                        {task.text}
-                    </span>
-
-                    {task.description && <p className="description">{task.description}</p>}
-                    {(task.dueDate || task.dueTime) && (
-                        <div className={isOverdue(task) ? "task-due overdue" : "task-due"}>
-                            Due: {task.dueDate} {task.dueTime} 
-                            {isOverdue(task) && <span className="overdue-badge">Overdue</span>}
-                        </div>
-                    )}
-
-                    <button className="delete-button" onClick={() => deleteTask(index)}>Delete</button>
-                    <button className="move-button" onClick={() => moveTaskUp(index)}>Move up</button>
-                    <button className="move-button" onClick={() => moveTaskDown(index)}>Move down</button>
-                </li>
+            {/* No tasks */}
+            {tasks.length === 0 && (
+                <p className="no-tasks-message">No tasks yet. Add one above to get focused.</p>
             )}
-        </ol>
-    </div>
-    )
+
+            {/* Task cards */}
+            <ul className="task-list">
+                {tasks.map((task, index) => (
+                    <li key={task.id} className={`task-card ${task.done ? "done" : ""}`}>
+                        <label className="task-check">
+                            <input
+                                type="checkbox"
+                                checked={task.done}
+                                onChange={() => toggleTaskDone(index)}
+                            />
+                            <span className="checkmark"></span>
+                        </label>
+
+                        <div className="task-content">
+                            <span className="task-text">{task.text}</span>
+                            {task.description && <p className="task-desc">{task.description}</p>}
+                            {(task.dueDate || task.dueTime) && (
+                                <span className={isOverdue(task) ? "due-chip overdue" : "due-chip"}>
+                                    {task.dueDate} {task.dueTime}
+                                    {isOverdue(task) && " · Overdue"}
+                                </span>
+                            )}
+                        </div>
+
+                        <div className="task-actions">
+                            <button className="icon-button" onClick={() => moveTaskUp(index)} title="Move up">↑</button>
+                            <button className="icon-button" onClick={() => moveTaskDown(index)} title="Move down">↓</button>
+                            <button className="icon-button delete" onClick={() => deleteTask(index)} title="Delete">✕</button>
+                        </div>
+                    </li>
+                ))}
+            </ul>
+        </div>
+    );
 }
 
 export default ToDoList
