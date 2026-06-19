@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { 
+import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   GoogleAuthProvider,
@@ -7,15 +7,18 @@ import {
   setPersistence,
   browserLocalPersistence,
   browserSessionPersistence,
-} from "firebase/auth"; 
+} from "firebase/auth";
 import { auth } from "../firebase";
-import "./LoginAndRegistration.css";
 import ForgotPassword from "./ForgotPassword";
+import { Button } from "@/components/ui/button";
 
 /* Assets */
 import googleLogo from "../assets/google-logo.png";
 import viewPassword from "../assets/view-password.png";
 import hidePassword from "../assets/hide-password.png";
+import image from "../assets/testing.png";
+
+const FADE = "fadeSlideUp 0.55s cubic-bezier(0.22,1,0.36,1) both";
 
 export default function Login() {
   const [email, setEmail] = useState("");
@@ -26,20 +29,19 @@ export default function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
 
-  /* Handle email sign in/up */ 
-  const handleEmail = async (e) => { 
+  const handleEmail = async (e) => {
     e.preventDefault();
     setError("");
 
     if (!email || !password) {
-      setError("Please enter your email and password.")
+      setError("Please enter your email and password.");
       return;
     }
 
     try {
       await setPersistence(
-        auth, 
-        rememberMe ? browserLocalPersistence : browserSessionPersistence
+        auth,
+        rememberMe ? browserLocalPersistence : browserSessionPersistence,
       );
       if (isSignUp) {
         await createUserWithEmailAndPassword(auth, email, password);
@@ -47,29 +49,28 @@ export default function Login() {
         await signInWithEmailAndPassword(auth, email, password);
       }
     } catch (err) {
-        if (isSignUp) {
-          if (err.code === "auth/email-already-in-use") {
-            setError("That email is already registered.")
-          } else if (err.code === "auth/weak-password") {
-            setError("Password should be at least 6 characters.")
-          } else if (err.code === "auth/invalid-email") {
-            setError("Please enter a valid email address.")
-          } else {
-            setError("Could not create account. Please try again.")
-          }
+      if (isSignUp) {
+        if (err.code === "auth/email-already-in-use") {
+          setError("That email is already registered.");
+        } else if (err.code === "auth/weak-password") {
+          setError("Password should be at least 6 characters.");
+        } else if (err.code === "auth/invalid-email") {
+          setError("Please enter a valid email address.");
         } else {
-            setError("Your email and password do not match.")
+          setError("Could not create account. Please try again.");
         }
-    };
-  }
+      } else {
+        setError("Your email and password do not match.");
+      }
+    }
+  };
 
-  /* Handle Google sign in */
   const handleGoogle = async () => {
     setError("");
     try {
       await setPersistence(
-        auth, 
-        rememberMe ? browserLocalPersistence : browserSessionPersistence
+        auth,
+        rememberMe ? browserLocalPersistence : browserSessionPersistence,
       );
       const provider = new GoogleAuthProvider();
       await signInWithPopup(auth, provider);
@@ -78,91 +79,141 @@ export default function Login() {
     }
   };
 
-  /* Handle forgot password */
   if (showForgot) {
     return <ForgotPassword onBack={() => setShowForgot(false)} />;
   }
 
   return (
-    <div className="login-container">
-      <h1>Locked-In</h1>
-      <h2>{isSignUp ? "Sign up" : "Welcome back"}</h2>
-      <h5>Please enter your details</h5>  
-      
-      {/* Email sign in/up */}
-      <form onSubmit={handleEmail} noValidate>
+    <div className="fixed inset-0 flex flex-col items-stretch justify-center gap-[15px] overflow-y-auto bg-white px-[8%] text-left md:items-start md:pl-[15%] md:pr-0">
+      <h1
+        className="fixed left-[2%] top-8 m-0 text-[25px] font-bold text-[#111827]"
+        style={{ animation: FADE }}
+      >
+        Locked-In
+      </h1>
+
+      <img
+        src={image}
+        alt=""
+        className="fixed right-0 top-0 hidden h-full w-[45%] object-cover md:block"
+        style={{
+          transformOrigin: "center",
+          animation:
+            "heroReveal 0.9s ease both, kenBurns 14s ease-in-out 0.9s infinite alternate",
+        }}
+      />
+
+      <h2
+        className="m-0 w-full max-w-[360px] text-[40px] font-bold text-[#111827]"
+        style={{ animation: FADE, animationDelay: "0.08s" }}
+      >
+        {isSignUp ? "Sign up" : "Welcome back"}
+      </h2>
+      <h5
+        className="m-0 mb-2 w-full max-w-[360px] text-sm font-normal text-[#98a2b3]"
+        style={{ animation: FADE, animationDelay: "0.12s" }}
+      >
+        Please enter your details
+      </h5>
+
+      {/* Google button — above the form */}
+      <button
+        type="button"
+        onClick={handleGoogle}
+        className="flex w-full max-w-[360px] cursor-pointer items-center justify-center rounded-lg border border-[#d0d5dd] bg-white py-[11px] text-sm font-semibold text-[#111827] transition-all hover:-translate-y-px hover:border-[#9ca3af] hover:shadow-[0_4px_14px_rgba(0,0,0,0.08)]"
+        style={{ animation: FADE, animationDelay: "0.16s" }}
+      >
+        <img
+          src={googleLogo}
+          alt="Google Logo"
+          className="mr-2 h-[18px] w-[18px] object-contain"
+        />
+        Sign in with Google
+      </button>
+
+      <form
+        onSubmit={handleEmail}
+        noValidate
+        className="flex w-full max-w-[360px] flex-col"
+        style={{ animation: FADE, animationDelay: "0.24s" }}
+      >
+        <div className="mb-4 text-center text-[13px] text-[#98a2b3]">or</div>
+
         <input
           type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          className="mb-3.5 w-full rounded-lg border border-[#d0d5dd] bg-white px-3.5 py-2.5 text-sm text-black placeholder:text-[#98a2b3] transition focus:border-[#111827] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08]"
         />
-        
-        <div className="password-field">
+
+        <div className="relative mb-3.5 w-full">
           <input
             type={showPassword ? "text" : "password"}
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
+            className="w-full rounded-lg border border-[#d0d5dd] bg-white py-2.5 pl-3.5 pr-[42px] text-sm text-black placeholder:text-[#98a2b3] transition focus:border-[#111827] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08]"
           />
           <button
             type="button"
-            className="password-toggle"
             onClick={() => setShowPassword(!showPassword)}
             aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-3 top-1/2 flex -translate-y-1/2 cursor-pointer items-center border-none bg-transparent p-0"
           >
             <img
               src={showPassword ? hidePassword : viewPassword}
               alt=""
+              className="h-[18px] w-[18px] object-contain transition-opacity hover:opacity-60"
             />
           </button>
         </div>
 
-        {/* Remember me and forgot password options */}
-        <div className="form-options">
-          <label className="remember-me">
+        <div className="mb-3.5 flex items-center justify-between text-[13px]">
+          <label className="flex cursor-pointer items-center gap-1.5 text-[#475467]">
             <input
               type="checkbox"
               checked={rememberMe}
               onChange={(e) => setRememberMe(e.target.checked)}
+              className="m-0 w-auto"
             />
             Remember Me
           </label>
           {!isSignUp && (
-            <button 
-              type="button" 
-              className="forgot-link" 
+            <button
+              type="button"
               onClick={() => setShowForgot(true)}
+              className="cursor-pointer border-none bg-transparent p-0 text-[13px] text-[#2563eb] hover:underline"
             >
-            Forgot Password?
+              Forgot Password?
             </button>
           )}
         </div>
 
-        <button 
+        <Button
           type="submit"
-          className="submit-button">
+          className="mt-1 h-auto w-full cursor-pointer rounded-lg bg-[#111827] py-3 text-[15px] font-semibold text-white transition-all hover:-translate-y-px hover:bg-black hover:shadow-[0_6px_18px_rgba(17,24,39,0.25)] active:translate-y-0"
+        >
           {isSignUp ? "Create Account" : "Log In"}
-        </button>
+        </Button>
       </form>
 
+      {error && (
+        <p className="m-0 w-full max-w-[360px] text-[13px] text-[#ef4444]">
+          {error}
+        </p>
+      )}
+
       <button
-        type="button"
-        onClick={handleGoogle}
-        className="google-button"
+        onClick={() => setIsSignUp(!isSignUp)}
+        className="m-0 mt-[18px] w-full max-w-[360px] cursor-pointer self-start border-none bg-transparent text-center text-[13px] text-[#2563eb] transition-colors hover:text-[#1e40af] hover:underline"
+        style={{ animation: FADE, animationDelay: "0.32s" }}
       >
-        <img src={googleLogo} alt="Google Logo" />
-        Sign in with Google
-      </button>
-
-      {error && <p className="login-error">{error}</p>}
-
-      <button 
-        className="toggle-link" 
-        onClick={() => setIsSignUp(!isSignUp)}>
-        {isSignUp ? "Already have an account? Log in" : "Need an account? Sign up"}
+        {isSignUp
+          ? "Already have an account? Log in"
+          : "Need an account? Sign up"}
       </button>
     </div>
   );

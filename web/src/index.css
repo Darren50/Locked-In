@@ -5,6 +5,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/geist";
+@import "react-calendar/dist/Calendar.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -130,6 +131,13 @@ textarea {
 
 body {
   margin: 0;
+  background: #f4f5f7;
+}
+
+@layer base {
+  *, ::before, ::after {
+    box-sizing: border-box;
+  }
 }
 
 @layer base {
@@ -279,6 +287,19 @@ body {
     }
 }
 
+/* React calendar theming */
+.react-calendar { border: none; width: 100%; background: transparent; font-family: var(--sans); }
+.react-calendar button { color: #1f2028; border-radius: 8px; }
+.react-calendar__navigation button { color: #1f2028; font-weight: 600; border-radius: 8px; }
+.react-calendar__navigation button:enabled:hover,
+.react-calendar__navigation button:enabled:focus { background: #f4f5f7; }
+.react-calendar__month-view__weekdays { color: #98a2b3; font-size: 11px; }
+.react-calendar__month-view__weekdays abbr { text-decoration: none; }
+.react-calendar__tile:enabled:hover,
+.react-calendar__tile:enabled:focus { background: rgba(37, 99, 235, 0.1); }
+.react-calendar__tile--now { background: rgba(37, 99, 235, 0.08); }
+.react-calendar__tile--active { background: #2563eb !important; color: #fff !important; }
+
 /* Shared component animations */
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(14px); }
@@ -291,4 +312,12 @@ body {
 @keyframes kenBurns {
   from { transform: scale(1); }
   to   { transform: scale(1.08); }
+}
+@keyframes todoFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes panelSlideIn {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
