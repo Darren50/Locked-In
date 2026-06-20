@@ -6,6 +6,7 @@ import ToDoList from "./components/ToDoList";
 import SideBar from "./components/SideBar";
 import Captcha from "./components/Captcha";
 import Calendar from "./components/Calendar";
+import Statistics from "./components/Statistics";
 
 export default function App() {
   const [user, setUser] = useState(null);
@@ -35,12 +36,16 @@ export default function App() {
 
   return (
     <div className="app">
-      <SideBar user={user} mainView={mainView} setMainView={setMainView} />
-      {mainView === "calendar" ? (
-        <Calendar user={user} />
-      ) : (
-        <ToDoList user={user} />
-      )}
+      <SideBar mainView={mainView} setMainView={setMainView} />
+      <div className="ml-[200px] min-h-screen">
+        {mainView === "calendar" ? (
+          <Calendar user={user} />
+        ) : mainView === "stats" ? (
+          <Statistics user={user} />
+        ) : (
+          <ToDoList user={user} />
+        )}
+      </div>
     </div>
   );
 }

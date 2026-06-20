@@ -101,7 +101,7 @@ export default function WeekCalendar({ user }) {
               <ChevronLeft size={18} />
             </button>
             <button
-              onClick={() => setAnchor(getWeekStart(new Date()))}
+              onClick={() => setAnchor(new Date())}
               className="h-9 cursor-pointer rounded-lg border border-gray-200 bg-white px-3.5 text-sm font-medium text-[#111827] transition hover:bg-gray-50"
             >
               Today
