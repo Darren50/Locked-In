@@ -9,13 +9,10 @@ import {
   addDoc,
   increment,
 } from "firebase/firestore";
-import Calendar from "react-calendar";
 
-function SideBar({ user }) {
+function SideBar({ user, mainView, setMainView }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [activeView, setActiveView] = useState("calendar");
-  const [date, setDate] = useState(new Date());
-  const [tasks, setTasks] = useState([]);
+  const [activeView, setActiveView] = useState(null);
   const [stats, setStats] = useState({
     totalFocusMinutes: 0,
     totalSessions: 0,
@@ -23,20 +20,6 @@ function SideBar({ user }) {
   const [sessions, setSessions] = useState([]);
 
   useEffect(() => {
-    //Tasks
-    if (!user) return;
-    const tasksCollection = collection(database, "users", user.uid, "tasks");
-    const unsubscribe = onSnapshot(tasksCollection, (snapshot) => {
-      const tasksData = snapshot.docs
-        .map((d) => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => a.order - b.order);
-      setTasks(tasksData);
-    });
-    return unsubscribe;
-  }, [user]);
-
-  useEffect(() => {
-    //Stats
     if (!user) return;
     const statsDoc = doc(database, "users", user.uid, "stats", "summary");
     const unsubscribe = onSnapshot(statsDoc, (snapshot) => {
@@ -46,7 +29,6 @@ function SideBar({ user }) {
   }, [user]);
 
   useEffect(() => {
-    //Graphs
     if (!user) return;
     const sessionsCollection = collection(
       database,
@@ -59,20 +41,6 @@ function SideBar({ user }) {
     });
     return unsubscribe;
   }, [user]);
-
-  function tasksOnDate(checkDate) {
-    const yyyy = checkDate.getFullYear();
-    const mm = String(checkDate.getMonth() + 1).padStart(2, "0");
-    const dd = String(checkDate.getDate()).padStart(2, "0");
-    const dateString = `${yyyy}-${mm}-${dd}`;
-    return tasks.filter((task) => task.dueDate === dateString);
-  }
-
-  function isOverdue(task) {
-    if (task.done || !task.dueDate) return false;
-    const dueString = `${task.dueDate}T${task.dueTime || "23:59"}`;
-    return new Date(dueString) < new Date();
-  }
 
   function getWeekData() {
     const now = new Date();
@@ -238,79 +206,14 @@ function SideBar({ user }) {
         </div>
       );
     }
-
-    if (activeView === "calendar") {
-      const tasksForSelected = tasksOnDate(date);
-      return (
-        <div
-          className={panelClass}
-          style={{ animation: "panelSlideIn 0.25s ease both" }}
-        >
-          <h2 className="mb-3.5 text-xl font-bold text-[#1f2028]">Calendar</h2>
-          <Calendar
-            onChange={setDate}
-            value={date}
-            tileContent={({ date: tileDate, view }) => {
-              if (view === "month" && tasksOnDate(tileDate).length > 0) {
-                return (
-                  <div className="mx-auto mt-0.5 h-1.5 w-1.5 rounded-full bg-[#c50c0c]"></div>
-                );
-              }
-              return null;
-            }}
-          />
-          <div className="mt-4 text-left">
-            <h3 className="mb-2 text-[15px] font-semibold text-[#1f2028]">
-              Task(s) on {date.toDateString()}
-            </h3>
-            {tasksForSelected.length === 0 ? (
-              <p className="text-sm text-gray-500">No tasks</p>
-            ) : (
-              <ul className="list-none p-0">
-                {tasksForSelected
-                  .sort((a, b) =>
-                    (a.dueTime || "").localeCompare(b.dueTime || ""),
-                  )
-                  .map((t) => (
-                    <li
-                      key={t.id}
-                      className="border-b border-gray-200 p-2 last:border-b-0"
-                    >
-                      <strong
-                        className={
-                          isOverdue(t) ? "text-red-500" : "text-[#1f2028]"
-                        }
-                      >
-                        {t.text}
-                      </strong>
-                      {isOverdue(t) && (
-                        <span className="ml-2 rounded bg-red-500 px-1.5 py-0.5 text-[11px] font-semibold text-white">
-                          Overdue
-                        </span>
-                      )}
-                      {t.description && (
-                        <div className="text-[13px] text-gray-500">
-                          {t.description}
-                        </div>
-                      )}
-                      {t.dueTime && (
-                        <div className="text-[12px] text-gray-400">
-                          {t.dueTime}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      );
-    }
     return null;
   }
 
   const navBtn =
-    "cursor-pointer rounded-md border-none bg-white px-3 py-2.5 text-left text-black transition-colors hover:bg-gray-300";
+    "cursor-pointer rounded-md border-none px-3 py-2.5 text-left transition-colors";
+  const mainNav = (active) =>
+    `${navBtn} ${active ? "bg-blue-600 text-white" : "bg-white text-black hover:bg-gray-300"}`;
+  const plainNav = `${navBtn} bg-white text-black hover:bg-gray-300`;
 
   return (
     <>
@@ -326,27 +229,42 @@ function SideBar({ user }) {
         {isOpen && (
           <div className="flex flex-col gap-2 p-4">
             <button
-              className={navBtn}
-              onClick={() => setActiveView("calendar")}
+              className={mainNav(mainView === "tasks")}
+              onClick={() => {
+                setMainView("tasks");
+                setActiveView(null);
+              }}
+            >
+              Tasks
+            </button>
+            <button
+              className={mainNav(mainView === "calendar")}
+              onClick={() => {
+                setMainView("calendar");
+                setActiveView(null);
+              }}
             >
               Calendar
             </button>
             <button
-              className={navBtn}
+              className={plainNav}
               onClick={() => setActiveView("statistics")}
             >
               Statistics
             </button>
-            <button className={navBtn} onClick={() => setActiveView("graphs")}>
+            <button
+              className={plainNav}
+              onClick={() => setActiveView("graphs")}
+            >
               Graphs
             </button>
-            <button className={navBtn} onClick={() => signOut(auth)}>
+            <button className={plainNav} onClick={() => signOut(auth)}>
               Log out
             </button>
           </div>
         )}
       </div>
-      {isOpen && panel()}
+      {isOpen && activeView && panel()}
     </>
   );
 }
