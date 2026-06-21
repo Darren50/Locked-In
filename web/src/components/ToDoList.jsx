@@ -9,6 +9,7 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 function ToDoList({ user }) {
   const [tasks, setTasks] = useState([]);
@@ -65,26 +66,20 @@ function ToDoList({ user }) {
     await deleteDoc(doc(tasksReference(), taskToDelete.id));
   }
 
-  async function moveTaskDown(index) {
-    if (index < tasks.length - 1) {
-      await updateDoc(doc(tasksReference(), tasks[index].id), {
-        order: index + 1,
-      });
-      await updateDoc(doc(tasksReference(), tasks[index + 1].id), {
-        order: index,
-      });
-    }
-  }
+  async function onDragEnd(result) {
+    const { source, destination } = result;
+    if (!destination || destination.index === source.index) return;
 
-  async function moveTaskUp(index) {
-    if (index > 0) {
-      await updateDoc(doc(tasksReference(), tasks[index].id), {
-        order: index - 1,
-      });
-      await updateDoc(doc(tasksReference(), tasks[index - 1].id), {
-        order: index,
-      });
-    }
+    const reordered = Array.from(tasks);
+    const [moved] = reordered.splice(source.index, 1);
+    reordered.splice(destination.index, 0, moved);
+
+    setTasks(reordered);
+    await Promise.all(
+      reordered.map((t, i) =>
+        updateDoc(doc(tasksReference(), t.id), { order: i }),
+      ),
+    );
   }
 
   function isOverdue(task) {
@@ -158,70 +153,67 @@ function ToDoList({ user }) {
         </p>
       )}
 
-      {/* Task cards */}
-      <ul className="m-0 flex list-none flex-col gap-[5px] p-0">
-        {tasks.map((task, index) => (
-          <li
-            key={task.id}
-            className={`group flex items-start gap-3 rounded-xl border border-[#e5e7eb] bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-all hover:-translate-y-0.5 hover:shadow-[0_8px_20px_rgba(0,0,0,0.08)] ${task.done ? "opacity-60" : ""}`}
-            style={{
-              animation: "todoFadeUp 0.4s ease both",
-              animationDelay: `${Math.min(index, 6) * 0.04}s`,
-            }}
-          >
-            <Checkbox
-              checked={task.done}
-              onCheckedChange={() => toggleTaskDone(index)}
-              className="mt-0.5 size-5 rounded-md border-[#d0d5dd] data-[state=checked]:border-[#16a34a] data-[state=checked]:bg-[#16a34a]"
-            />
+      {/* Draggable task list */}
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="tasks">
+          {(provided) => (
+            <ul
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className="m-0 flex list-none flex-col gap-[5px] p-0"
+            >
+              {tasks.map((task, index) => (
+                <Draggable key={task.id} draggableId={task.id} index={index}>
+                  {(prov, snapshot) => (
+                    <li
+                      ref={prov.innerRef}
+                      {...prov.draggableProps}
+                      {...prov.dragHandleProps}
+                      className={`group flex items-start gap-3 rounded-xl border border-[#e5e7eb] bg-white px-4 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow ${snapshot.isDragging ? "shadow-[0_12px_28px_rgba(0,0,0,0.18)]" : ""} ${task.done ? "opacity-60" : ""} cursor-grab active:cursor-grabbing`}
+                    >
+                      <Checkbox
+                        checked={task.done}
+                        onCheckedChange={() => toggleTaskDone(index)}
+                        className="mt-0.5 size-5 rounded-md border-[#d0d5dd] data-[state=checked]:border-[#16a34a] data-[state=checked]:bg-[#16a34a]"
+                      />
 
-            <div className="min-w-0 flex-1">
-              <span
-                className={`text-[15px] font-medium ${task.done ? "text-[#98a2b3]" : "text-[#111827]"}`}
-              >
-                {task.text}
-              </span>
-              {task.description && (
-                <p className="mt-1 text-[13px] text-[#6b7280]">
-                  {task.description}
-                </p>
-              )}
-              {(task.dueDate || task.dueTime) && (
-                <span
-                  className={`mt-2 inline-block rounded-md px-2 py-[3px] text-[12px] ${isOverdue(task) ? "bg-[#fee2e2] font-medium text-[#dc2626]" : "bg-[#e9eaec] text-[#6b7280]"}`}
-                >
-                  {task.dueDate} {task.dueTime}
-                  {isOverdue(task) && " · Overdue"}
-                </span>
-              )}
-            </div>
+                      <div className="min-w-0 flex-1">
+                        <span
+                          className={`text-[15px] font-medium ${task.done ? "text-[#98a2b3]" : "text-[#111827]"}`}
+                        >
+                          {task.text}
+                        </span>
+                        {task.description && (
+                          <p className="mt-1 text-[13px] text-[#6b7280]">
+                            {task.description}
+                          </p>
+                        )}
+                        {(task.dueDate || task.dueTime) && (
+                          <span
+                            className={`mt-2 inline-block rounded-md px-2 py-[3px] text-[12px] ${isOverdue(task) ? "bg-[#fee2e2] font-medium text-[#dc2626]" : "bg-[#e9eaec] text-[#6b7280]"}`}
+                          >
+                            {task.dueDate} {task.dueTime}
+                            {isOverdue(task) && " · Overdue"}
+                          </span>
+                        )}
+                      </div>
 
-            <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-              <button
-                onClick={() => moveTaskUp(index)}
-                title="Move up"
-                className="flex size-7 cursor-pointer items-center justify-center rounded-md bg-[#f3f4f6] text-sm text-[#6b7280] transition-colors hover:bg-[#e5e7eb] hover:text-[#111827]"
-              >
-                ↑
-              </button>
-              <button
-                onClick={() => moveTaskDown(index)}
-                title="Move down"
-                className="flex size-7 cursor-pointer items-center justify-center rounded-md bg-[#f3f4f6] text-sm text-[#6b7280] transition-colors hover:bg-[#e5e7eb] hover:text-[#111827]"
-              >
-                ↓
-              </button>
-              <button
-                onClick={() => deleteTask(index)}
-                title="Delete"
-                className="flex size-7 cursor-pointer items-center justify-center rounded-md bg-[#f3f4f6] text-sm text-[#6b7280] transition-colors hover:bg-[#fee2e2] hover:text-[#dc2626]"
-              >
-                ✕
-              </button>
-            </div>
-          </li>
-        ))}
-      </ul>
+                      <button
+                        onClick={() => deleteTask(index)}
+                        title="Delete"
+                        className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md bg-[#f3f4f6] text-sm text-[#6b7280] opacity-0 transition-colors hover:bg-[#fee2e2] hover:text-[#dc2626] group-hover:opacity-100"
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </ul>
+          )}
+        </Droppable>
+      </DragDropContext>
     </div>
   );
 }
