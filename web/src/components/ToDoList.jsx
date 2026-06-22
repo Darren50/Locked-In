@@ -10,6 +10,14 @@ import {
 } from "firebase/firestore";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Pencil } from "lucide-react";
 
 function ToDoList({ user }) {
   const [tasks, setTasks] = useState([]);
@@ -17,6 +25,17 @@ function ToDoList({ user }) {
   const [newDesc, setNewDesc] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
   const [newDueTime, setNewDueTime] = useState("");
+
+  //When editing tasks
+  const [editTask, setEditTask] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
+  const [editDueTime, setEditDueTime] = useState("");
+
+  //Common
+  const commonClass =
+    "w-full rounded-lg border border-[#d0d5dd] bg-white px-3.5 py-[11px] text-sm text-[#111827] placeholder:text-[#98a2b3] transition focus:border-[#111827] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08]";
 
   useEffect(() => {
     //To load tasks from the database in real time
@@ -66,6 +85,12 @@ function ToDoList({ user }) {
     await deleteDoc(doc(tasksReference(), taskToDelete.id));
   }
 
+  function isOverdue(task) {
+    if (task.done || !task.dueDate) return false;
+    const dueString = `${task.dueDate}T${task.dueTime || "23:59"}`;
+    return new Date(dueString) < new Date();
+  }
+
   async function onDragEnd(result) {
     const { source, destination } = result;
     if (!destination || destination.index === source.index) return;
@@ -82,10 +107,24 @@ function ToDoList({ user }) {
     );
   }
 
-  function isOverdue(task) {
-    if (task.done || !task.dueDate) return false;
-    const dueString = `${task.dueDate}T${task.dueTime || "23:59"}`;
-    return new Date(dueString) < new Date();
+  function openEdit(task) {
+    setEditTask(task);
+    setEditText(task.text || "");
+    setEditDesc(task.description || "");
+    setEditDueDate(task.dueDate || "");
+    setEditDueTime(task.dueTime || "");
+  }
+
+  async function saveEdit(e) {
+    e.preventDefault();
+    if (editText.trim() === "") return;
+    await updateDoc(doc(tasksReference(), editTask.id), {
+      text: editText,
+      description: editDesc,
+      dueDate: editDueDate,
+      dueTime: editDueTime,
+    });
+    setEditTask(null);
   }
 
   return (
@@ -198,13 +237,24 @@ function ToDoList({ user }) {
                         )}
                       </div>
 
-                      <button
-                        onClick={() => deleteTask(index)}
-                        title="Delete"
-                        className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md bg-[#f3f4f6] text-sm text-[#6b7280] opacity-0 transition-colors hover:bg-[#fee2e2] hover:text-[#dc2626] group-hover:opacity-100"
-                      >
-                        ✕
-                      </button>
+                      <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(task)}
+                          title="Edit"
+                          className="flex size-7 cursor-pointer items-center justify-center rounded-md bg-[#f3f4f6] text-[#6b7280] transition-colors hover:bg-[#e5e7eb] hover:text-[#111827]"
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteTask(index)}
+                          title="Delete"
+                          className="flex size-7 cursor-pointer items-center justify-center rounded-md bg-[#f3f4f6] text-sm text-[#6b7280] transition-colors hover:bg-[#fee2e2] hover:text-[#dc2626]"
+                        >
+                          ✕
+                        </button>
+                      </div>
                     </li>
                   )}
                 </Draggable>
@@ -214,6 +264,67 @@ function ToDoList({ user }) {
           )}
         </Droppable>
       </DragDropContext>
+
+      {/* Edit task dialog */}
+      <Dialog
+        open={!!editTask}
+        onOpenChange={(open) => {
+          if (!open) setEditTask(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle className="text-[#111827]">Edit task</DialogTitle>
+          </DialogHeader>
+          <form
+            onSubmit={saveEdit}
+            className="flex flex-col gap-3 text-[#111827]"
+          >
+            <input
+              type="text"
+              placeholder="Task name"
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className={commonClass}
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              className={commonClass}
+            />
+            <div className="flex gap-3">
+              <label className="flex flex-1 flex-col gap-1 text-[12px] text-[#98a2b3]">
+                Due date
+                <input
+                  type="date"
+                  value={editDueDate}
+                  onChange={(e) => setEditDueDate(e.target.value)}
+                  className={commonClass}
+                />
+              </label>
+              <label className="flex flex-1 flex-col gap-1 text-[12px] text-[#98a2b3]">
+                Due time
+                <input
+                  type="time"
+                  value={editDueTime}
+                  onChange={(e) => setEditDueTime(e.target.value)}
+                  className={commonClass}
+                />
+              </label>
+            </div>
+            <DialogFooter className="mt-2">
+              <button
+                type="submit"
+                className="cursor-pointer rounded-lg bg-[#111827] px-[18px] py-2.5 text-sm font-semibold text-white transition-all hover:bg-black"
+              >
+                Save changes
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
