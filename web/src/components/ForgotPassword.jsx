@@ -32,10 +32,13 @@ export default function ForgotPassword({ onBack }) {
     );
   };
 
+  const commonClass =
+    "mb-3.5 w-full rounded-lg border border-[var(--app-field-border)] bg-[var(--app-card)] px-3.5 py-2.5 text-sm text-[var(--app-text)] placeholder:text-[var(--app-muted)] transition focus:border-[var(--app-text)] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08] dark:focus:ring-white/10";
+
   return (
-    <div className="fixed inset-0 flex flex-col items-stretch justify-center gap-[15px] overflow-y-auto bg-white px-[8%] text-left md:items-start md:pl-[15%] md:pr-0">
+    <div className="fixed inset-0 flex flex-col items-stretch justify-center gap-[15px] overflow-y-auto bg-[var(--app-card)] px-[8%] text-left md:items-start md:pl-[15%] md:pr-0">
       <h1
-        className="fixed left-[2%] top-8 m-0 text-[25px] font-bold text-[#111827]"
+        className="fixed left-[2%] top-8 m-0 text-[25px] font-bold text-[var(--app-text)]"
         style={{ animation: FADE }}
       >
         Locked-In
@@ -53,13 +56,13 @@ export default function ForgotPassword({ onBack }) {
       />
 
       <h2
-        className="m-0 w-full max-w-[360px] text-[40px] font-bold text-[#111827]"
+        className="m-0 w-full max-w-[360px] text-[40px] font-bold text-[var(--app-text)]"
         style={{ animation: FADE, animationDelay: "0.08s" }}
       >
         Reset Password
       </h2>
       <h5
-        className="m-0 mb-2 w-full max-w-[360px] text-sm font-normal text-[#98a2b3]"
+        className="m-0 mb-2 w-full max-w-[360px] text-sm font-normal text-[var(--app-muted)]"
         style={{ animation: FADE, animationDelay: "0.14s" }}
       >
         Please enter your email
@@ -77,11 +80,11 @@ export default function ForgotPassword({ onBack }) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="mb-3.5 w-full rounded-lg border border-[#d0d5dd] bg-white px-3.5 py-2.5 text-sm text-black placeholder:text-[#98a2b3] transition focus:border-[#111827] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08]"
+          className={commonClass}
         />
         <Button
           type="submit"
-          className="h-auto w-full cursor-pointer rounded-lg bg-[#111827] py-3 text-[15px] font-semibold text-white transition-all hover:-translate-y-px hover:bg-black hover:shadow-[0_6px_18px_rgba(17,24,39,0.25)] active:translate-y-0"
+          className="h-auto w-full cursor-pointer rounded-lg bg-[var(--app-primary)] py-3 text-[15px] font-semibold text-[var(--app-primary-text)] transition-all hover:-translate-y-px hover:opacity-90 hover:shadow-[0_6px_18px_rgba(17,24,39,0.25)] active:translate-y-0"
         >
           Reset Password
         </Button>
@@ -89,7 +92,7 @@ export default function ForgotPassword({ onBack }) {
 
       {error && (
         <p
-          className="m-0 w-full max-w-[360px] text-[13px] text-[#ef4444]"
+          className="m-0 w-full max-w-[360px] text-[13px] text-[#ef4444] dark:text-red-400"
           style={{ animation: FADE }}
         >
           {error}
@@ -97,7 +100,7 @@ export default function ForgotPassword({ onBack }) {
       )}
       {notice && (
         <p
-          className="m-0 w-full max-w-[360px] text-[13px] text-[#16a34a]"
+          className="m-0 w-full max-w-[360px] text-[13px] text-[#16a34a] dark:text-green-400"
           style={{ animation: FADE }}
         >
           {notice}
@@ -106,7 +109,7 @@ export default function ForgotPassword({ onBack }) {
 
       <button
         onClick={onBack}
-        className="m-0 mt-[18px] w-full max-w-[360px] cursor-pointer self-start border-none bg-transparent text-center text-[13px] text-[#2563eb] transition-colors hover:text-[#1e40af] hover:underline"
+        className="m-0 mt-[18px] w-full max-w-[360px] cursor-pointer self-start border-none bg-transparent text-center text-[13px] text-[#2563eb] transition-colors hover:text-[#1e40af] hover:underline dark:text-blue-400 dark:hover:text-blue-300"
         style={{ animation: FADE, animationDelay: "0.30s" }}
       >
         Back to Log In

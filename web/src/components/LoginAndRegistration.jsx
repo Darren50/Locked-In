@@ -83,10 +83,13 @@ export default function Login() {
     return <ForgotPassword onBack={() => setShowForgot(false)} />;
   }
 
+  const commonClass =
+    "w-full rounded-lg border border-[var(--app-field-border)] bg-[var(--app-card)] px-3.5 py-2.5 text-sm text-[var(--app-text)] placeholder:text-[var(--app-muted)] transition focus:border-[var(--app-text)] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08] dark:focus:ring-white/10";
+
   return (
-    <div className="fixed inset-0 flex flex-col items-stretch justify-center gap-[15px] overflow-y-auto bg-white px-[8%] text-left md:items-start md:pl-[15%] md:pr-0">
+    <div className="fixed inset-0 flex flex-col items-stretch justify-center gap-[15px] overflow-y-auto bg-[var(--app-card)] px-[8%] text-left md:items-start md:pl-[15%] md:pr-0">
       <h1
-        className="fixed left-[2%] top-8 m-0 text-[25px] font-bold text-[#111827]"
+        className="fixed left-[2%] top-8 m-0 text-[25px] font-bold text-[var(--app-text)]"
         style={{ animation: FADE }}
       >
         Locked-In
@@ -104,23 +107,23 @@ export default function Login() {
       />
 
       <h2
-        className="m-0 w-full max-w-[360px] text-[40px] font-bold text-[#111827]"
+        className="m-0 w-full max-w-[360px] text-[40px] font-bold text-[var(--app-text)]"
         style={{ animation: FADE, animationDelay: "0.08s" }}
       >
         {isSignUp ? "Sign up" : "Welcome back"}
       </h2>
       <h5
-        className="m-0 mb-2 w-full max-w-[360px] text-sm font-normal text-[#98a2b3]"
+        className="m-0 mb-2 w-full max-w-[360px] text-sm font-normal text-[var(--app-muted)]"
         style={{ animation: FADE, animationDelay: "0.12s" }}
       >
         Please enter your details
       </h5>
 
-      {/* Google button — above the form */}
+      {/* Google button */}
       <button
         type="button"
         onClick={handleGoogle}
-        className="flex w-full max-w-[360px] cursor-pointer items-center justify-center rounded-lg border border-[#d0d5dd] bg-white py-[11px] text-sm font-semibold text-[#111827] transition-all hover:-translate-y-px hover:border-[#9ca3af] hover:shadow-[0_4px_14px_rgba(0,0,0,0.08)]"
+        className="flex w-full max-w-[360px] cursor-pointer items-center justify-center rounded-lg border border-[var(--app-field-border)] bg-[var(--app-card)] py-[11px] text-sm font-semibold text-[var(--app-text)] transition-all hover:-translate-y-px hover:border-[var(--app-muted)] hover:shadow-[0_4px_14px_rgba(0,0,0,0.08)]"
         style={{ animation: FADE, animationDelay: "0.16s" }}
       >
         <img
@@ -137,7 +140,9 @@ export default function Login() {
         className="flex w-full max-w-[360px] flex-col"
         style={{ animation: FADE, animationDelay: "0.24s" }}
       >
-        <div className="mb-4 text-center text-[13px] text-[#98a2b3]">or</div>
+        <div className="mb-4 text-center text-[13px] text-[var(--app-muted)]">
+          or
+        </div>
 
         <input
           type="email"
@@ -145,7 +150,7 @@ export default function Login() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          className="mb-3.5 w-full rounded-lg border border-[#d0d5dd] bg-white px-3.5 py-2.5 text-sm text-black placeholder:text-[#98a2b3] transition focus:border-[#111827] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08]"
+          className={`mb-3.5 ${commonClass}`}
         />
 
         <div className="relative mb-3.5 w-full">
@@ -155,7 +160,7 @@ export default function Login() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
-            className="w-full rounded-lg border border-[#d0d5dd] bg-white py-2.5 pl-3.5 pr-[42px] text-sm text-black placeholder:text-[#98a2b3] transition focus:border-[#111827] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08]"
+            className={`${commonClass} pr-[42px]`}
           />
           <button
             type="button"
@@ -166,13 +171,13 @@ export default function Login() {
             <img
               src={showPassword ? hidePassword : viewPassword}
               alt=""
-              className="h-[18px] w-[18px] object-contain transition-opacity hover:opacity-60"
+              className="h-[18px] w-[18px] object-contain transition-opacity hover:opacity-60 dark:invert"
             />
           </button>
         </div>
 
         <div className="mb-3.5 flex items-center justify-between text-[13px]">
-          <label className="flex cursor-pointer items-center gap-1.5 text-[#475467]">
+          <label className="flex cursor-pointer items-center gap-1.5 text-[var(--app-subtle)]">
             <input
               type="checkbox"
               checked={rememberMe}
@@ -185,7 +190,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShowForgot(true)}
-              className="cursor-pointer border-none bg-transparent p-0 text-[13px] text-[#2563eb] hover:underline"
+              className="cursor-pointer border-none bg-transparent p-0 text-[13px] text-[#2563eb] hover:underline dark:text-blue-400"
             >
               Forgot Password?
             </button>
@@ -194,21 +199,21 @@ export default function Login() {
 
         <Button
           type="submit"
-          className="mt-1 h-auto w-full cursor-pointer rounded-lg bg-[#111827] py-3 text-[15px] font-semibold text-white transition-all hover:-translate-y-px hover:bg-black hover:shadow-[0_6px_18px_rgba(17,24,39,0.25)] active:translate-y-0"
+          className="mt-1 h-auto w-full cursor-pointer rounded-lg bg-[var(--app-primary)] py-3 text-[15px] font-semibold text-[var(--app-primary-text)] transition-all hover:-translate-y-px hover:opacity-90 hover:shadow-[0_6px_18px_rgba(17,24,39,0.25)] active:translate-y-0"
         >
           {isSignUp ? "Create Account" : "Log In"}
         </Button>
       </form>
 
       {error && (
-        <p className="m-0 w-full max-w-[360px] text-[13px] text-[#ef4444]">
+        <p className="m-0 w-full max-w-[360px] text-[13px] text-[#ef4444] dark:text-red-400">
           {error}
         </p>
       )}
 
       <button
         onClick={() => setIsSignUp(!isSignUp)}
-        className="m-0 mt-[18px] w-full max-w-[360px] cursor-pointer self-start border-none bg-transparent text-center text-[13px] text-[#2563eb] transition-colors hover:text-[#1e40af] hover:underline"
+        className="m-0 mt-[18px] w-full max-w-[360px] cursor-pointer self-start border-none bg-transparent text-center text-[13px] text-[#2563eb] transition-colors hover:text-[#1e40af] hover:underline dark:text-blue-400 dark:hover:text-blue-300"
         style={{ animation: FADE, animationDelay: "0.32s" }}
       >
         {isSignUp

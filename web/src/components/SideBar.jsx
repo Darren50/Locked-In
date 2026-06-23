@@ -3,13 +3,13 @@ import { auth } from "../firebase";
 
 function SideBar({ mainView, setMainView }) {
   const navBtn =
-    "cursor-pointer rounded-md border-none px-3 py-2.5 text-left text-sm font-small transition-colors";
+    "cursor-pointer rounded-md border-none px-3 py-2.5 text-left text-sm font-medium transition-colors";
   const item = (active) =>
-    `${navBtn} ${active ? "bg-blue-600 text-white" : "bg-transparent text-black/80 hover:bg-white/10"}`;
+    `${navBtn} ${active ? "bg-blue-600 text-white" : "text-[var(--app-text)] hover:bg-black/5 dark:hover:bg-white/10"}`;
 
   return (
-    <div className="fixed left-0 top-0 z-10 flex h-screen w-[200px] flex-col bg-white p-4 text-white">
-      <div className="mb-6 px-1 text-lg font-bold text-[#111827]">
+    <div className="fixed left-0 top-0 z-10 flex h-screen w-[200px] flex-col border-r border-[var(--app-border)] bg-[var(--app-card)] p-4">
+      <div className="mb-6 px-1 text-lg font-bold text-[var(--app-text)]">
         Locked-In
       </div>
 
@@ -32,11 +32,17 @@ function SideBar({ mainView, setMainView }) {
         >
           Statistics
         </button>
+        <button
+          className={item(mainView === "settings")}
+          onClick={() => setMainView("settings")}
+        >
+          Settings
+        </button>
       </nav>
 
       <button
         onClick={() => signOut(auth)}
-        className={`${navBtn} mt-auto bg-transparent text-black/70 hover:bg-white/10`}
+        className={`${navBtn} mt-auto text-[var(--app-muted)] hover:bg-black/5 dark:hover:bg-white/10`}
       >
         Log out
       </button>

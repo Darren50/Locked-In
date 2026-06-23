@@ -1,7 +1,7 @@
 import { useState } from "react";
 import ReCAPTCHA from "react-google-recaptcha";
 import { Button } from "@/components/ui/button";
-import Image from "../assets/testing.png";
+import image from "../assets/testing.png";
 
 const RECAPTCHA_SITE_KEY = "6LdaGhktAAAAAIvkFUyhtdGjmSQ2A5f3gKrwZVWP"; // V2 test key
 
@@ -11,10 +11,10 @@ export default function Captcha({ onSuccess }) {
   const [captchaToken, setCaptchaToken] = useState(null);
 
   return (
-    <div className="fixed inset-0 flex flex-col items-stretch justify-center gap-4 overflow-y-auto bg-white px-[8%] text-left md:items-start md:pl-[15%] md:pr-0">
+    <div className="fixed inset-0 flex flex-col items-stretch justify-center gap-4 overflow-y-auto bg-[var(--app-card)] px-[8%] text-left md:items-start md:pl-[15%] md:pr-0">
       {/* Top left logo */}
       <h1
-        className="fixed left-[2%] top-8 m-0 text-[25px] font-bold text-[#111827]"
+        className="fixed left-[2%] top-8 m-0 text-[25px] font-bold text-[var(--app-text)]"
         style={{ animation: FADE }}
       >
         Locked-In
@@ -22,7 +22,7 @@ export default function Captcha({ onSuccess }) {
 
       {/* Image */}
       <img
-        src={Image}
+        src={image}
         alt=""
         className="fixed right-0 top-0 hidden h-full w-[45%] object-cover md:block"
         style={{
@@ -34,7 +34,7 @@ export default function Captcha({ onSuccess }) {
 
       {/* Title */}
       <h2
-        className="m-0 w-full max-w-[360px] text-[34px] font-bold text-[#111827]"
+        className="m-0 w-full max-w-[360px] text-[34px] font-bold text-[var(--app-text)]"
         style={{ animation: FADE, animationDelay: "0.08s" }}
       >
         Verify you are human
@@ -55,7 +55,7 @@ export default function Captcha({ onSuccess }) {
         disabled={!captchaToken}
         onClick={onSuccess}
         style={{ animation: FADE, animationDelay: "0.28s" }}
-        className="h-auto w-full max-w-[360px] bg-[#111827] py-3 text-[15px] font-semibold text-white transition-all hover:-translate-y-px hover:bg-black hover:shadow-[0_6px_18px_rgba(17,24,39,0.25)] active:translate-y-0 disabled:bg-[#808080] disabled:opacity-50"
+        className="h-auto w-full max-w-[360px] bg-[var(--app-primary)] py-3 text-[15px] font-semibold text-[var(--app-primary-text)] transition-all hover:-translate-y-px hover:opacity-90 hover:shadow-[0_6px_18px_rgba(17,24,39,0.25)] active:translate-y-0 disabled:opacity-50"
       >
         Continue
       </Button>

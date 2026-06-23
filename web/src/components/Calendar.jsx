@@ -12,7 +12,6 @@ function getWeekStart(date) {
   d.setHours(0, 0, 0, 0);
   return d;
 }
-
 function toDateStr(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -79,16 +78,15 @@ export default function WeekCalendar({ user }) {
     <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col gap-5 px-6 py-8">
       {/* Header */}
       <div className="flex flex-col gap-3">
-        <h1 className="text-2xl font-bold text-[#111827]">{label()}</h1>
+        <h1 className="text-2xl font-bold text-[var(--app-text)]">{label()}</h1>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-[#98a2b3]">Plan your focus sessions.</p>
           <div className="flex items-center gap-2">
-            <div className="flex rounded-lg bg-gray-100 p-1 text-sm font-medium">
+            <div className="flex rounded-lg bg-black/5 p-1 text-sm font-medium dark:bg-white/10">
               {["day", "week", "month"].map((v) => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
-                  className={`cursor-pointer rounded-md px-3.5 py-1.5 capitalize transition ${view === v ? "bg-white text-blue-600 shadow-sm" : "bg-transparent text-gray-500 hover:bg-white/70 hover:text-gray-700"}`}
+                  className={`cursor-pointer rounded-md px-3.5 py-1.5 capitalize transition ${view === v ? "bg-[var(--app-card)] text-blue-600 shadow-sm dark:text-blue-400" : "text-[var(--app-subtle)] hover:bg-[var(--app-card)] hover:text-[var(--app-text)]"}`}
                 >
                   {v}
                 </button>
@@ -96,19 +94,19 @@ export default function WeekCalendar({ user }) {
             </div>
             <button
               onClick={() => shift(-1)}
-              className="flex size-9 cursor-pointer items-center justify-center rounded-lg bg-transparent text-gray-500 transition hover:bg-gray-100"
+              className="flex size-9 cursor-pointer items-center justify-center rounded-lg text-[var(--app-subtle)] transition hover:bg-black/5 dark:hover:bg-white/10"
             >
               <ChevronLeft size={18} />
             </button>
             <button
               onClick={() => setAnchor(new Date())}
-              className="h-9 cursor-pointer rounded-lg border border-gray-200 bg-white px-3.5 text-sm font-medium text-[#111827] transition hover:bg-gray-50"
+              className="h-9 cursor-pointer rounded-lg border border-[var(--app-border)] bg-[var(--app-card)] px-3.5 text-sm font-medium text-[var(--app-text)] transition hover:bg-black/5 dark:hover:bg-white/5"
             >
               Today
             </button>
             <button
               onClick={() => shift(1)}
-              className="flex size-9 cursor-pointer items-center justify-center rounded-lg bg-transparent text-gray-500 transition hover:bg-gray-100"
+              className="flex size-9 cursor-pointer items-center justify-center rounded-lg text-[var(--app-subtle)] transition hover:bg-black/5 dark:hover:bg-white/10"
             >
               <ChevronRight size={18} />
             </button>
@@ -128,7 +126,7 @@ export default function WeekCalendar({ user }) {
           }}
         />
       ) : (
-        <div className="flex-1 overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white shadow-sm">
+        <div className="flex-1 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] shadow-sm">
           <div
             className="grid h-full"
             style={{
@@ -141,21 +139,21 @@ export default function WeekCalendar({ user }) {
               return (
                 <div
                   key={toDateStr(day)}
-                  className={`flex min-h-[480px] flex-col ${i > 0 ? "border-l border-[#f3f4f6]" : ""}`}
+                  className={`flex min-h-[480px] flex-col ${i > 0 ? "border-l border-[var(--app-border)]" : ""}`}
                 >
-                  <div className="flex items-center justify-between border-b border-[#f3f4f6] px-3 py-3">
+                  <div className="flex items-center justify-between border-b border-[var(--app-border)] px-3 py-3">
                     <div className="flex items-baseline gap-2">
-                      <span className="text-[11px] font-semibold uppercase tracking-wide text-[#98a2b3]">
+                      <span className="text-[11px] font-semibold uppercase tracking-wide text-[var(--app-muted)]">
                         {day.toLocaleDateString("en-SG", { weekday: "short" })}
                       </span>
                       <span
-                        className={`grid h-7 min-w-7 place-items-center rounded-full px-1.5 text-sm font-bold ${isToday ? "bg-blue-600 text-white" : "text-[#111827]"}`}
+                        className={`grid h-7 min-w-7 place-items-center rounded-full px-1.5 text-sm font-bold ${isToday ? "bg-blue-600 text-white" : "text-[var(--app-text)]"}`}
                       >
                         {day.getDate()}
                       </span>
                     </div>
                     {dayTasks.length > 0 && (
-                      <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-600">
+                      <span className="rounded-full bg-blue-500/10 px-2 py-0.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400">
                         {dayTasks.length}
                       </span>
                     )}
@@ -163,22 +161,22 @@ export default function WeekCalendar({ user }) {
 
                   <div className="flex flex-1 flex-col gap-2 p-2.5">
                     {dayTasks.length === 0 ? (
-                      <p className="mt-2 text-center text-xs text-gray-300">
+                      <p className="mt-2 text-center text-xs text-[var(--app-muted)]">
                         Nothing due
                       </p>
                     ) : (
                       dayTasks.map((t) => (
                         <div
                           key={t.id}
-                          className="rounded-lg border border-[#e5e7eb] bg-white px-3 py-2 shadow-[0_1px_2px_rgba(17,24,39,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_14px_rgba(17,24,39,0.08)]"
+                          className="rounded-lg border border-[var(--app-border)] bg-[var(--app-card)] px-3 py-2 shadow-[0_1px_2px_rgba(17,24,39,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_14px_rgba(17,24,39,0.08)]"
                         >
                           <p
-                            className={`line-clamp-2 text-[13px] font-semibold ${t.done ? "text-gray-400 line-through" : "text-[#111827]"}`}
+                            className={`line-clamp-2 text-[13px] font-semibold ${t.done ? "text-[var(--app-muted)] line-through" : "text-[var(--app-text)]"}`}
                           >
                             {t.text}
                           </p>
                           {t.dueTime && (
-                            <span className="mt-1 inline-block rounded bg-blue-50 px-1.5 py-0.5 text-[11px] font-medium text-blue-600">
+                            <span className="mt-1 inline-block rounded bg-blue-500/10 px-1.5 py-0.5 text-[11px] font-medium text-blue-600 dark:text-blue-400">
                               {t.dueTime}
                             </span>
                           )}
@@ -205,12 +203,12 @@ function MonthGrid({ anchor, tasksForDay, now, onPick }) {
     return d;
   });
   return (
-    <div className="flex-1 overflow-hidden rounded-2xl border border-[#e5e7eb] bg-white shadow-sm">
-      <div className="grid grid-cols-7 border-b border-[#f3f4f6]">
+    <div className="flex-1 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] shadow-sm">
+      <div className="grid grid-cols-7 border-b border-[var(--app-border)]">
         {DAY_LABELS.map((l) => (
           <div
             key={l}
-            className="py-2.5 text-center text-[11px] font-semibold uppercase tracking-wide text-[#98a2b3]"
+            className="py-2.5 text-center text-[11px] font-semibold uppercase tracking-wide text-[var(--app-muted)]"
           >
             {l}
           </div>
@@ -225,10 +223,10 @@ function MonthGrid({ anchor, tasksForDay, now, onPick }) {
             <button
               key={toDateStr(day)}
               onClick={() => onPick(day)}
-              className={`flex min-h-[96px] cursor-pointer flex-col gap-1 border-[#f3f4f6] bg-white p-2 text-left transition hover:bg-gray-50 ${i % 7 !== 0 ? "border-l" : ""} ${i >= 7 ? "border-t" : ""} ${inMonth ? "" : "opacity-40"}`}
+              className={`flex min-h-[96px] cursor-pointer flex-col gap-1 border-[var(--app-border)] bg-[var(--app-card)] p-2 text-left transition hover:bg-black/5 dark:hover:bg-white/5 ${i % 7 !== 0 ? "border-l" : ""} ${i >= 7 ? "border-t" : ""} ${inMonth ? "" : "opacity-40"}`}
             >
               <span
-                className={`grid size-7 place-items-center rounded-full text-sm font-semibold ${isToday ? "bg-blue-600 text-white" : "text-[#111827]"}`}
+                className={`grid size-7 place-items-center rounded-full text-sm font-semibold ${isToday ? "bg-blue-600 text-white" : "text-[var(--app-text)]"}`}
               >
                 {day.getDate()}
               </span>
@@ -236,14 +234,14 @@ function MonthGrid({ anchor, tasksForDay, now, onPick }) {
                 {dayTasks.slice(0, 3).map((t) => (
                   <div
                     key={t.id}
-                    className="truncate rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
+                    className="truncate rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400"
                   >
                     {t.dueTime ? t.dueTime + " " : ""}
                     {t.text}
                   </div>
                 ))}
                 {dayTasks.length > 3 && (
-                  <div className="text-[10px] font-semibold text-gray-400">
+                  <div className="text-[10px] font-semibold text-[var(--app-muted)]">
                     +{dayTasks.length - 3}
                   </div>
                 )}

@@ -98,42 +98,46 @@ export default function StatsView({ user }) {
   const hours = Math.floor((stats.totalFocusMinutes || 0) / 60);
   const minutes = (stats.totalFocusMinutes || 0) % 60;
 
+  const card =
+    "rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] p-6 shadow-sm";
+
   return (
     <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col gap-5 px-6 py-8">
-      <div>
-        <h1 className="text-2xl font-bold text-[#111827]">Statistics</h1>
-        <p className="mt-0.5 text-sm text-[#98a2b3]">Your focus at a glance.</p>
-      </div>
+      <h1 className="text-2xl font-bold text-[var(--app-text)]">Statistics</h1>
 
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="rounded-2xl border border-[#e5e7eb] bg-white p-6 shadow-sm">
-          <div className="text-[34px] font-bold text-blue-600">
+        <div className={card}>
+          <div className="text-[34px] font-bold text-blue-600 dark:text-blue-400">
             {hours}h {minutes}m
           </div>
-          <div className="mt-1 text-sm text-gray-500">Total focused time</div>
+          <div className="mt-1 text-sm text-[var(--app-subtle)]">
+            Total focused time
+          </div>
         </div>
-        <div className="rounded-2xl border border-[#e5e7eb] bg-white p-6 shadow-sm">
-          <div className="text-[34px] font-bold text-blue-600">
+        <div className={card}>
+          <div className="text-[34px] font-bold text-blue-600 dark:text-blue-400">
             {stats.totalSessions || 0}
           </div>
-          <div className="mt-1 text-sm text-gray-500">
+          <div className="mt-1 text-sm text-[var(--app-subtle)]">
             Pomodoro sessions completed
           </div>
         </div>
       </div>
 
       {/* Weekly graph */}
-      <div className="rounded-2xl border border-[#e5e7eb] bg-white p-6 shadow-sm">
+      <div className={card}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[#111827]">Weekly Focus</h2>
-          <div className="flex gap-4 text-xs text-gray-500">
+          <h2 className="text-lg font-bold text-[var(--app-text)]">
+            Weekly Focus
+          </h2>
+          <div className="flex gap-4 text-xs text-[var(--app-subtle)]">
             <span className="flex items-center">
               <span className="mr-1 inline-block size-2 rounded-sm bg-blue-600"></span>{" "}
               Focus
             </span>
             <span className="flex items-center">
-              <span className="mr-1 inline-block size-2 rounded-sm bg-blue-200"></span>{" "}
+              <span className="mr-1 inline-block size-2 rounded-sm bg-blue-500/30"></span>{" "}
               Break
             </span>
           </div>
@@ -149,7 +153,7 @@ export default function StatsView({ user }) {
               >
                 <div className="flex w-full flex-1 flex-col justify-end">
                   <div
-                    className="w-full rounded-t-[3px] bg-blue-200 transition-[height] duration-300"
+                    className="w-full rounded-t-[3px] bg-blue-500/30 transition-[height] duration-300"
                     style={{ height: `${breakPct}%` }}
                     title={`Break: ${d.breakMinutes} min`}
                   ></div>
@@ -159,8 +163,10 @@ export default function StatsView({ user }) {
                     title={`Focus: ${d.focusMinutes} min · ${d.sessionCount} sessions`}
                   ></div>
                 </div>
-                <div className="mt-2 text-xs text-gray-500">{d.label}</div>
-                <div className="text-[11px] text-gray-900">
+                <div className="mt-2 text-xs text-[var(--app-subtle)]">
+                  {d.label}
+                </div>
+                <div className="text-[11px] text-[var(--app-text)]">
                   {d.focusMinutes}m
                 </div>
               </div>
@@ -170,14 +176,14 @@ export default function StatsView({ user }) {
       </div>
 
       {stats.lastSessionAt && (
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-[var(--app-muted)]">
           Last session: {new Date(stats.lastSessionAt).toLocaleString()}
         </p>
       )}
 
       <button
         onClick={addTestSession}
-        className="w-fit cursor-pointer rounded-lg border border-dashed border-blue-600 bg-white px-4 py-2 text-sm text-blue-600 transition-colors hover:bg-blue-50"
+        className="w-fit cursor-pointer rounded-lg border border-dashed border-blue-600 bg-[var(--app-card)] px-4 py-2 text-sm text-blue-600 transition-colors hover:bg-blue-500/10 dark:text-blue-400"
       >
         + Add test session
       </button>
