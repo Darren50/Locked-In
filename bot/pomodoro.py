@@ -227,6 +227,7 @@ class SessionTracker:
         db.collection("users").document(USER_UID) \
           .collection("sessions").document(doc_id).set({
             "startTime":     datetime.now(timezone.utc),
+            "startedAt":     datetime.now(timezone.utc).isoformat(),
             "sessionNumber": session_num,
             "plannedMins":   FOCUS_MINS,
             "completed":     False,
@@ -244,18 +245,27 @@ class SessionTracker:
         with self._lock:
             if self.doc_id is None:
                 return
-            pct    = round(self.focused_secs / max(self.total_secs, 1), 2)
-            doc_id = self.doc_id
-            self.doc_id = None
+            pct          = round(self.focused_secs / max(self.total_secs, 1), 2)
+            duration_mins = round(self.focused_secs / 60, 1)
+            doc_id       = self.doc_id
+            self.doc_id  = None
         db.collection("users").document(USER_UID) \
           .collection("sessions").document(doc_id).update({
-            "endTime":      datetime.now(timezone.utc),
-            "focusPercent": pct,
-            "totalSecs":    self.total_secs,
-            "focusedSecs":  int(self.focused_secs),
-            "completed":    completed,
+            "endTime":         datetime.now(timezone.utc),
+            "focusPercent":    pct,
+            "totalSecs":       self.total_secs,
+            "focusedSecs":     int(self.focused_secs),
+            "completed":       completed,
+            "durationMinutes": duration_mins,
         })
-        print(f"Session saved → focusPercent: {pct}")
+        summary_ref = db.collection("users").document(USER_UID) \
+                       .collection("stats").document("summary")
+        summary_ref.set({
+            "totalFocusMinutes": fb_firestore.Increment(duration_mins),
+            "totalSessions":     fb_firestore.Increment(1 if completed else 0),
+            "lastSessionAt":     datetime.now(timezone.utc).isoformat(),
+        }, merge=True)
+        print(f"Session saved → focusPercent: {pct}, duration: {duration_mins}m")
 
 session_tracker = SessionTracker()
 
