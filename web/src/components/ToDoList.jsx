@@ -133,7 +133,6 @@ function ToDoList({ user }) {
       <form
         onSubmit={addTask}
         className="mb-7 flex flex-col gap-3 rounded-[14px] border border-[var(--app-border)] bg-[var(--app-card)] p-4 shadow-[0_4px_14px_rgba(0,0,0,0.05)]"
-        style={{ animation: "todoFadeUp 0.5s ease both" }}
       >
         <input
           type="text"
@@ -147,30 +146,30 @@ function ToDoList({ user }) {
           placeholder="Add a description (optional)"
           value={newDesc}
           onChange={(e) => setNewDesc(e.target.value)}
-          className={commonClass}
+          className={`${commonClass} text-[15px] font-medium`}
         />
         <div className="flex items-end gap-3">
-          <label className="flex flex-1 flex-col gap-1 text-[12px] text-[var(--app-muted)]">
+          <label className="flex flex-1 flex-col text-[12px] text-[var(--app-muted)]">
             Due date
             <input
               type="date"
               value={newDueDate}
               onChange={(e) => setNewDueDate(e.target.value)}
-              className={commonClass}
+              className={`${commonClass} cursor-pointer`}
             />
           </label>
-          <label className="flex flex-1 flex-col gap-1 text-[12px] text-[var(--app-muted)]">
+          <label className="flex flex-1 flex-col text-[12px] text-[var(--app-muted)]">
             Due time
             <input
               type="time"
               value={newDueTime}
               onChange={(e) => setNewDueTime(e.target.value)}
-              className={commonClass}
+              className={`${commonClass} cursor-pointer`}
             />
           </label>
           <button
             type="submit"
-            className="cursor-pointer whitespace-nowrap rounded-lg bg-[var(--app-primary)] px-[18px] py-[11px] text-sm font-semibold text-[var(--app-primary-text)] transition-all hover:-translate-y-px hover:opacity-90 hover:shadow-[0_6px_18px_rgba(0,0,0,0.18)] active:translate-y-0 active:shadow-none"
+            className="cursor-pointer whitespace-nowrap rounded-lg bg-[var(--app-primary)] px-[18px] py-[13px] text-sm font-semibold text-[var(--app-primary-text)] hover:opacity-90 hover:shadow-[0_6px_18px_rgba(0,0,0,0.18)] active:translate-y-0 active:shadow-none"
           >
             + Add task
           </button>
@@ -203,7 +202,7 @@ function ToDoList({ user }) {
                       <Checkbox
                         checked={task.done}
                         onCheckedChange={() => toggleTaskDone(index)}
-                        className="mt-0.5 size-5 rounded-md border-[var(--app-field-border)] data-[state=checked]:border-[#16a34a] data-[state=checked]:bg-[#16a34a]"
+                        className="mt-0.5 size-5 rounded-md border-[var(--app-field-border)] data-checked:border-[#16a34a] data-checked:bg-[#16a34a] data-checked:text-white dark:data-checked:border-[#16a34a] dark:data-checked:bg-[#16a34a]"
                       />
 
                       <div className="min-w-0 flex-1">
