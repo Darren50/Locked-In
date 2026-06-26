@@ -34,6 +34,30 @@ users/{uid}/tasks/
 users/{uid}/sessions/
 ```
 
+### Updating Firebase Security Rules
+
+This makes it so that: 
+- Only authenticated users can access data. 
+- Each user can only read and write their own data (`users/{their uid}/...`).
+- No user can access another user's tasks, sessions, or stats.
+
+1. Go to the [Firebase Console](https://console.firebase.google.com/) and select the project you created
+2. In the left sidebar, click **Firestore Database**, then select the **Rules** tab
+3. Replace the existing rules with the following:
+
+```
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{userId}/{document=**} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}
+```
+
+4. Click **Publish**.
+
 ### Get Web App Credentials
 
 5. Go to **Project Settings → General → Your apps → Add app → Web**
