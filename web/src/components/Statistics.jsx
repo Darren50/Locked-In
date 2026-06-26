@@ -1,12 +1,5 @@
 import { useState, useEffect } from "react";
-import {
-  collection,
-  onSnapshot,
-  doc,
-  setDoc,
-  addDoc,
-  increment,
-} from "firebase/firestore";
+import { collection, onSnapshot, doc } from "firebase/firestore";
 import { database } from "../firebase";
 
 export default function StatsView({ user }) {
@@ -60,46 +53,36 @@ export default function StatsView({ user }) {
         (sum, s) => sum + (s.durationMinutes || 0),
         0,
       );
-      let breakMinutes = 0;
-      daySessions.forEach((s, idx) => {
-        breakMinutes += (idx + 1) % 4 === 0 ? 15 : 5;
-      });
       return {
         label,
         focusMinutes,
-        breakMinutes,
         sessionCount: daySessions.length,
       };
     });
   }
 
-  async function addTestSession() {
-    await addDoc(collection(database, "users", user.uid, "sessions"), {
-      startedAt: new Date().toISOString(),
-      durationMinutes: 25,
-    });
-    const statsDoc = doc(database, "users", user.uid, "stats", "summary");
-    await setDoc(
-      statsDoc,
-      {
-        totalFocusMinutes: increment(25),
-        totalSessions: increment(1),
-        lastSessionAt: new Date().toISOString(),
-      },
-      { merge: true },
-    );
-  }
-
   const week = getWeekData();
-  const maxMinutes = Math.max(
-    60,
-    ...week.map((d) => d.focusMinutes + d.breakMinutes),
-  );
-  const hours = Math.floor((stats.totalFocusMinutes || 0) / 60);
-  const minutes = (stats.totalFocusMinutes || 0) % 60;
+  const maxMinutes = Math.max(60, ...week.map((d) => d.focusMinutes));
+  const totalSeconds = Math.round((stats.totalFocusMinutes || 0) * 60);
+  const hours = Math.floor(totalSeconds / 3600);
+  const minutes = Math.floor((totalSeconds % 3600) / 60);
+  const seconds = totalSeconds % 60;
+  const focusLabel =
+    hours > 0
+      ? `${hours}h ${minutes}m`
+      : minutes > 0
+        ? `${minutes}m ${seconds}s`
+        : `${seconds}s`;
 
   const card =
     "rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] p-6 shadow-sm";
+
+  function formatShort(totalMinutes) {
+    const totalSeconds = Math.round((totalMinutes || 0) * 60);
+    if (totalSeconds === 0) return "0m";
+    if (totalSeconds < 60) return `${totalSeconds}s`;
+    return `${Math.round(totalMinutes)}m`;
+  }
 
   return (
     <div className="mx-auto flex h-full w-full max-w-[1100px] flex-col gap-5 px-6 py-8">
@@ -109,7 +92,7 @@ export default function StatsView({ user }) {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className={card}>
           <div className="text-[34px] font-bold text-blue-600 dark:text-blue-400">
-            {hours}h {minutes}m
+            {focusLabel}
           </div>
           <div className="mt-1 text-sm text-[var(--app-subtle)]">
             Total focused time
@@ -131,21 +114,10 @@ export default function StatsView({ user }) {
           <h2 className="text-lg font-bold text-[var(--app-text)]">
             Weekly Focus
           </h2>
-          <div className="flex gap-4 text-xs text-[var(--app-subtle)]">
-            <span className="flex items-center">
-              <span className="mr-1 inline-block size-2 rounded-sm bg-blue-600"></span>{" "}
-              Focus
-            </span>
-            <span className="flex items-center">
-              <span className="mr-1 inline-block size-2 rounded-sm bg-blue-500/30"></span>{" "}
-              Break
-            </span>
-          </div>
         </div>
         <div className="flex h-[240px] items-end gap-3">
           {week.map((d) => {
             const focusPct = (d.focusMinutes / maxMinutes) * 100;
-            const breakPct = (d.breakMinutes / maxMinutes) * 100;
             return (
               <div
                 key={d.label}
@@ -153,12 +125,7 @@ export default function StatsView({ user }) {
               >
                 <div className="flex w-full flex-1 flex-col justify-end">
                   <div
-                    className="w-full rounded-t-[3px] bg-blue-500/30 transition-[height] duration-300"
-                    style={{ height: `${breakPct}%` }}
-                    title={`Break: ${d.breakMinutes} min`}
-                  ></div>
-                  <div
-                    className="w-full rounded-b-[3px] bg-blue-600 transition-[height] duration-300"
+                    className="w-full rounded-t-[3px] bg-blue-600 transition-[height] duration-300"
                     style={{ height: `${focusPct}%` }}
                     title={`Focus: ${d.focusMinutes} min · ${d.sessionCount} sessions`}
                   ></div>
@@ -167,7 +134,7 @@ export default function StatsView({ user }) {
                   {d.label}
                 </div>
                 <div className="text-[11px] text-[var(--app-text)]">
-                  {d.focusMinutes}m
+                  {formatShort(d.focusMinutes)}
                 </div>
               </div>
             );
@@ -180,13 +147,6 @@ export default function StatsView({ user }) {
           Last session: {new Date(stats.lastSessionAt).toLocaleString()}
         </p>
       )}
-
-      <button
-        onClick={addTestSession}
-        className="w-fit cursor-pointer rounded-lg border border-dashed border-blue-600 bg-[var(--app-card)] px-4 py-2 text-sm text-blue-600 transition-colors hover:bg-blue-500/10 dark:text-blue-400"
-      >
-        + Add test session
-      </button>
     </div>
   );
 }
