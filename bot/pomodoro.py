@@ -10,6 +10,13 @@ import mediapipe as mp
 import firebase_admin
 from firebase_admin import credentials, firestore as fb_firestore
 from datetime import datetime, timezone
+import sounddevice as sd
+from scipy.io.wavfile import write as wav_write
+from groq import Groq
+from gtts import gTTS
+import pygame
+import tempfile
+import os
 
 FB_DEVICE = "/dev/fb1"
 W, H = 320, 240
@@ -59,6 +66,16 @@ cred = credentials.Certificate("/home/darren/firebase-key.json")
 firebase_admin.initialize_app(cred)
 db = fb_firestore.client()
 
+# ── GROQ ──────────────────────────────────────────────────────
+
+from dotenv import load_dotenv
+load_dotenv("/home/darren/Locked-In-2/.env")
+GROQ_API_KEY = os.environ["GROQ_API_KEY"]
+groq_client  = Groq(api_key=GROQ_API_KEY)
+pygame.mixer.init()
+
+SAMPLE_RATE = 44100
+
 # ── BACKGROUND TIMER ──────────────────────────────────────────
 
 class PomodoroTimer:
@@ -95,7 +112,6 @@ class PomodoroTimer:
             self.active    = False
 
     def _next_phase(self):
-        # Save session if ending a focus phase
         if self.mode == "FOCUS":
             threading.Thread(
                 target=session_tracker.end,
@@ -111,7 +127,6 @@ class PomodoroTimer:
             self.session += 1
             self.mode    = "FOCUS"
             self.total   = FOCUS_MINS * 60
-            # Start tracking new focus session
             threading.Thread(
                 target=session_tracker.start,
                 args=(self.session,),
@@ -245,10 +260,10 @@ class SessionTracker:
         with self._lock:
             if self.doc_id is None:
                 return
-            pct          = round(self.focused_secs / max(self.total_secs, 1), 2)
-            duration_mins = round(self.focused_secs / 60, 1)
-            doc_id       = self.doc_id
-            self.doc_id  = None
+            pct           = round(self.focused_secs / max(self.total_secs, 1), 2)
+            duration_mins = self.focused_secs / 60
+            doc_id        = self.doc_id
+            self.doc_id   = None
         db.collection("users").document(USER_UID) \
           .collection("sessions").document(doc_id).update({
             "endTime":         datetime.now(timezone.utc),
@@ -265,7 +280,7 @@ class SessionTracker:
             "totalSessions":     fb_firestore.Increment(1 if completed else 0),
             "lastSessionAt":     datetime.now(timezone.utc).isoformat(),
         }, merge=True)
-        print(f"Session saved → focusPercent: {pct}, duration: {duration_mins}m")
+        print(f"Session saved → focusPercent: {pct}, duration: {duration_mins:.2f}m")
 
 session_tracker = SessionTracker()
 
@@ -327,11 +342,9 @@ def draw_cute(t, ts=None):
         mins, secs = divmod(ts['time_left'], 60)
         draw.text((175, 10), f"BREAK {mins:02d}:{secs:02d}",
                   fill=(70, 190, 110), font=FONT_TINY)
-        draw.text((18, 218), "K1 Resume    K2 Tasks",
-                  fill=(155, 135, 210), font=FONT_SMALL)
-    else:
-        draw.text((18, 218), "K1 Start Timer    K2 Tasks",
-                  fill=(155, 135, 210), font=FONT_SMALL)
+
+    draw.text((10, 218), "K1 Timer  K2 Tasks  K3 AI",
+              fill=(155, 135, 210), font=FONT_SMALL)
     return img
 
 # ── SERIOUS FACE ──────────────────────────────────────────────
@@ -364,7 +377,7 @@ def draw_serious(t, ts):
     st = "⏸" if ts['paused'] else "▶"
     draw.text((10, 8), f"{st} FOCUS  {mins:02d}:{secs:02d}  S{ts['session']}",
               fill=(210, 65, 65), font=FONT_SMALL)
-    draw.text((18, 218), "K1 Resume Timer    K2 Tasks",
+    draw.text((10, 218), "K1 Timer  K2 Tasks  K3 AI",
               fill=(110, 90, 135), font=FONT_SMALL)
     return img
 
@@ -386,6 +399,8 @@ def run_idle(last_img=None):
             k1.clear(); return "pomodoro", img
         if k2.is_set():
             k2.clear(); return "tasks", img
+        if k3.is_set():
+            k3.clear(); return "gemini", img
         k4.clear()
 
 # ── POMODORO ──────────────────────────────────────────────────
@@ -547,7 +562,61 @@ def draw_tasks(tasks, selected_idx, scroll_offset, loading=False):
     if scroll_offset + VISIBLE_ROWS < len(tasks):
         draw.text((W-16, 196), "▼", fill=(100, 100, 140), font=FONT_TINY)
 
-    draw.text((12, 222), "K1 Toggle  K2↓  K3↑  K4 Home",
+    draw.text((12, 222), "K1 Details  K2↑  K3↓  K4 Home",
+              fill=(60, 60, 80), font=FONT_SMALL)
+    return img
+
+
+def draw_task_detail(tasks, idx):
+    img  = Image.new("RGB", (W, H), (10, 10, 25))
+    draw = ImageDraw.Draw(img)
+
+    draw.text((12, 8), "TASK DETAIL", fill=(160, 160, 220), font=FONT_MED)
+
+    count_str = f"{idx+1}/{len(tasks)}"
+    draw.text((W - 10 - len(count_str)*6, 12), count_str, fill=(100, 100, 130), font=FONT_TINY)
+
+    draw.line([10, 34, W-10, 34], fill=(40, 40, 60), width=1)
+
+    task = tasks[idx]
+
+    if task.get("done"):
+        cb_col, cb_label, txt_col = (80, 200, 120), "[x]", (120, 120, 140)
+    else:
+        cb_col, cb_label, txt_col = (140, 140, 160), "[ ]", (210, 210, 225)
+
+    draw.text((14, 42), cb_label, fill=cb_col, font=FONT_SMALL)
+    title = task.get("text", "")
+    if len(title) > 36:
+        draw.text((52, 42), title[:36],         fill=txt_col, font=FONT_SMALL)
+        draw.text((52, 57), title[36:72] + "…", fill=txt_col, font=FONT_SMALL)
+        y = 78
+    else:
+        draw.text((52, 42), title, fill=txt_col, font=FONT_SMALL)
+        y = 64
+
+    desc = task.get("description", "")
+    if desc:
+        draw.text((14, y), "Desc:", fill=(140, 140, 170), font=FONT_TINY)
+        y += 13
+        if len(desc) > 42:
+            draw.text((14, y), desc[:42],         fill=(190, 190, 210), font=FONT_TINY)
+            y += 13
+            draw.text((14, y), desc[42:84] + "…", fill=(190, 190, 210), font=FONT_TINY)
+            y += 16
+        else:
+            draw.text((14, y), desc, fill=(190, 190, 210), font=FONT_TINY)
+            y += 16
+
+    due_date = task.get("dueDate", "")
+    due_time = task.get("dueTime", "")
+    if due_date or due_time:
+        due_str = "Due: " + due_date
+        if due_time:
+            due_str += f"  {due_time}"
+        draw.text((14, y + 4), due_str, fill=(220, 180, 80), font=FONT_SMALL)
+
+    draw.text((12, 222), "K1 Toggle  K2 Prev  K3 Next  K4 Back",
               fill=(60, 60, 80), font=FONT_SMALL)
     return img
 
@@ -557,7 +626,6 @@ def run_tasks(last_img=None):
     if last_img:
         fade(last_img)
 
-    # Show loading until first snapshot arrives
     write_lcd(draw_tasks([], 0, 0, loading=True))
 
     tasks      = []
@@ -576,49 +644,249 @@ def run_tasks(last_img=None):
     watch = db.collection("users").document(USER_UID) \
                .collection("tasks").on_snapshot(_on_tasks)
 
-    first_snap.wait(timeout=5)  # wait up to 5s for first data
+    first_snap.wait(timeout=5)
 
     selected_idx  = 0
     scroll_offset = 0
+    view          = "list"
 
     while True:
         with tasks_lock:
             snapshot = list(tasks)
 
-        # Clamp selection if tasks were deleted
         if snapshot:
             selected_idx = min(selected_idx, len(snapshot) - 1)
 
-        img = draw_tasks(snapshot, selected_idx, scroll_offset)
+        if view == "list":
+            img = draw_tasks(snapshot, selected_idx, scroll_offset)
+        else:
+            img = draw_task_detail(snapshot, selected_idx)
+        write_lcd(img)
+
+        if view == "list":
+            if k4.is_set():
+                k4.clear()
+                watch.unsubscribe()
+                return "idle", img
+
+            if k1.is_set() and snapshot:
+                k1.clear()
+                view = "detail"
+
+            if k2.is_set() and snapshot:
+                k2.clear()
+                selected_idx = max(selected_idx - 1, 0)
+                if selected_idx < scroll_offset:
+                    scroll_offset -= 1
+
+            if k3.is_set() and snapshot:
+                k3.clear()
+                selected_idx = min(selected_idx + 1, len(snapshot) - 1)
+                if selected_idx >= scroll_offset + VISIBLE_ROWS:
+                    scroll_offset += 1
+
+        else:
+            if k4.is_set():
+                k4.clear()
+                view = "list"
+
+            if k1.is_set() and snapshot:
+                k1.clear()
+                t        = snapshot[selected_idx]
+                new_done = not t.get("done", False)
+                with tasks_lock:
+                    tasks[selected_idx]["done"] = new_done
+                db.collection("users").document(USER_UID) \
+                  .collection("tasks").document(t["id"]) \
+                  .update({"done": new_done})
+
+            if k2.is_set() and snapshot:
+                k2.clear()
+                selected_idx = max(selected_idx - 1, 0)
+                if selected_idx < scroll_offset:
+                    scroll_offset -= 1
+
+            if k3.is_set() and snapshot:
+                k3.clear()
+                selected_idx = min(selected_idx + 1, len(snapshot) - 1)
+                if selected_idx >= scroll_offset + VISIBLE_ROWS:
+                    scroll_offset += 1
+
+# ── AI ASSISTANT (GROQ) ───────────────────────────────────────
+
+def draw_gemini(status, response=""):
+    img  = Image.new("RGB", (W, H), (10, 10, 25))
+    draw = ImageDraw.Draw(img)
+
+    draw.text((12, 8), "AI ASSISTANT", fill=(160, 160, 220), font=FONT_MED)
+    draw.line([10, 34, W-10, 34], fill=(40, 40, 60), width=1)
+
+    if status == "idle":
+        draw.text((60, 95),  "Press K1 to ask",  fill=(180, 180, 200), font=FONT_MED)
+        draw.text((75, 125), "a question",        fill=(180, 180, 200), font=FONT_MED)
+        draw.text((12, 222), "K1 Ask  K4 Home",   fill=(60, 60, 80),   font=FONT_SMALL)
+
+    elif status == "recording":
+        draw.ellipse([148, 80, 172, 104], fill=(210, 50, 50))
+        draw.text((105, 115), "Recording...",    fill=(210, 50, 50),   font=FONT_MED)
+        draw.text((55,  140), "Press K1 to stop", fill=(160, 160, 180), font=FONT_SMALL)
+        draw.text((12,  222), "K1 Stop  K4 Home", fill=(60, 60, 80),   font=FONT_SMALL)
+
+    elif status == "thinking":
+        draw.text((90, 105), "Thinking...",  fill=(220, 180, 80), font=FONT_MED)
+        draw.text((12, 222), "K4 Home",      fill=(60, 60, 80),  font=FONT_SMALL)
+
+    elif status == "speaking":
+        draw.text((85, 45), "Speaking...", fill=(80, 200, 120), font=FONT_MED)
+        if response:
+            words = response.split()
+            line, lines = "", []
+            for word in words:
+                test = (line + " " + word).strip()
+                if len(test) > 38:
+                    lines.append(line)
+                    line = word
+                else:
+                    line = test
+            if line:
+                lines.append(line)
+            for i, l in enumerate(lines[:6]):
+                draw.text((12, 72 + i*22), l, fill=(160, 160, 180), font=FONT_TINY)
+        draw.text((12, 222), "K1 Skip  K4 Home", fill=(60, 60, 80), font=FONT_SMALL)
+
+    elif status == "error":
+        draw.text((85, 100), "Error :(",         fill=(210, 50, 50),   font=FONT_MED)
+        draw.text((40, 130), "Check connection", fill=(160, 160, 180), font=FONT_SMALL)
+        draw.text((12, 222), "K1 Try again  K4 Home", fill=(60, 60, 80), font=FONT_SMALL)
+
+    return img
+
+
+def run_gemini(last_img=None):
+    k1.clear(); k2.clear(); k3.clear(); k4.clear()
+    if last_img:
+        fade(last_img)
+
+    recording_data = []
+    status         = "idle"
+    response_text  = ""
+    stream         = None
+
+    def audio_callback(indata, frames, time_info, status_flags):
+        recording_data.append(indata.copy())
+
+    while True:
+        img = draw_gemini(status, response=response_text)
         write_lcd(img)
 
         if k4.is_set():
             k4.clear()
-            watch.unsubscribe()
+            if stream and stream.active:
+                stream.stop()
+                stream.close()
+            if pygame.mixer.music.get_busy():
+                pygame.mixer.music.stop()
             return "idle", img
 
-        if k1.is_set() and snapshot:
+        if k1.is_set():
             k1.clear()
-            t        = snapshot[selected_idx]
-            new_done = not t.get("done", False)
-            with tasks_lock:
-                tasks[selected_idx]["done"] = new_done
-            db.collection("users").document(USER_UID) \
-              .collection("tasks").document(t["id"]) \
-              .update({"done": new_done})
 
-        if k2.is_set() and snapshot:
-            k2.clear()
-            selected_idx = min(selected_idx + 1, len(snapshot) - 1)
-            if selected_idx >= scroll_offset + VISIBLE_ROWS:
-                scroll_offset += 1
+            if status in ("idle", "error"):
+                recording_data.clear()
+                stream = sd.InputStream(
+                    samplerate=SAMPLE_RATE,
+                    channels=1,
+                    callback=audio_callback
+                )
+                stream.start()
+                status = "recording"
 
-        if k3.is_set() and snapshot:
-            k3.clear()
-            selected_idx = max(selected_idx - 1, 0)
-            if selected_idx < scroll_offset:
-                scroll_offset -= 1
+            elif status == "recording":
+                stream.stop()
+                stream.close()
+                stream = None
 
+                audio = np.concatenate(recording_data, axis=0) if recording_data else np.array([])
+
+                # Ignore recordings shorter than ~0.7s (likely empty/noise)
+                if len(audio) < int(SAMPLE_RATE * 0.7):
+                    print("Recording too short, ignoring")
+                    status = "idle"
+                    continue
+
+                status = "thinking"
+                write_lcd(draw_gemini("thinking"))
+
+                try:
+                    tmp = tempfile.NamedTemporaryFile(suffix=".wav", delete=False)
+                    wav_write(tmp.name, SAMPLE_RATE, audio)
+
+                    # 1. Transcribe speech → text (Groq Whisper, forced English)
+                    with open(tmp.name, "rb") as f:
+                        transcription = groq_client.audio.transcriptions.create(
+                            file=(os.path.basename(tmp.name), f.read()),
+                            model="whisper-large-v3",
+                            language="en",
+                            temperature=0.0,
+                            prompt="This is a student asking a study or general knowledge question.",
+                        )
+                    question = transcription.text.strip()
+                    os.unlink(tmp.name)
+                    print(f"Heard: {question}")
+
+                    if not question:
+                        status = "idle"
+                        continue
+
+                    # 2. Answer the question (Groq Llama), with bot context
+                    ts      = timer.state()
+                    context = (
+                        f"You are a helpful AI assistant inside a Pomodoro study bot "
+                        f"called Locked-In. The user is on session {ts['session']} of "
+                        f"{SESSIONS_BEFORE_LONG}, in {ts['mode']} mode. "
+                        f"Answer their question clearly and concisely in 2-3 sentences."
+                    )
+                    completion = groq_client.chat.completions.create(
+                        model="llama-3.3-70b-versatile",
+                        messages=[
+                            {"role": "system", "content": context},
+                            {"role": "user",   "content": question},
+                        ],
+                    )
+                    response_text = completion.choices[0].message.content
+
+                    # 3. Speak the answer (gTTS + pygame)
+                    status = "speaking"
+                    write_lcd(draw_gemini("speaking", response=response_text))
+
+                    tts      = gTTS(text=response_text, lang="en")
+                    tts_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+                    tts.save(tts_file.name)
+
+                    pygame.mixer.music.load(tts_file.name)
+                    pygame.mixer.music.play()
+                    while pygame.mixer.music.get_busy():
+                        time.sleep(0.1)
+                        if k1.is_set():
+                            k1.clear()
+                            pygame.mixer.music.stop()
+                            break
+                    os.unlink(tts_file.name)
+
+                    status        = "idle"
+                    response_text = ""
+
+                except Exception as e:
+                    print(f"Assistant error: {e}")
+                    status        = "error"
+                    response_text = ""
+
+            elif status == "speaking":
+                pygame.mixer.music.stop()
+                status        = "idle"
+                response_text = ""
+
+        time.sleep(0.05)
 # ── MAIN ──────────────────────────────────────────────────────
 
 def main():
@@ -629,6 +897,7 @@ def main():
         elif state == "pomodoro":    state, last_img = run_pomodoro(last_img)
         elif state == "confirm_end": state, last_img = run_confirm_end(last_img)
         elif state == "tasks":       state, last_img = run_tasks(last_img)
+        elif state == "gemini":      state, last_img = run_gemini(last_img)
 
 if __name__ == "__main__":
     main()
