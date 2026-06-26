@@ -6,7 +6,6 @@ import { auth } from "./firebase";
 import Login from "./components/LoginAndRegistration";
 import ToDoList from "./components/ToDoList";
 import SideBar from "./components/SideBar";
-import Captcha from "./components/Captcha";
 import Calendar from "./components/Calendar";
 import Statistics from "./components/Statistics";
 import Settings from "./components/Settings";
@@ -17,7 +16,6 @@ import { GlassPanel } from "@/components/ui/glasspanel";
 export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [captchaPassed, setCaptchaPassed] = useState(false);
   const [mainView, setMainView] = useState("tasks");
   const [darkMode, setDarkMode] = useState(
     () => localStorage.getItem("theme") === "dark",
@@ -69,10 +67,6 @@ export default function App() {
 
   if (!user) {
     return <Login />;
-  }
-
-  if (!captchaPassed) {
-    return <Captcha onSuccess={() => setCaptchaPassed(true)} />;
   }
 
   return (
