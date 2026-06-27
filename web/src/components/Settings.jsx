@@ -14,15 +14,26 @@ export default function Settings({
     if (!file) return;
     const reader = new FileReader();
     reader.onload = () => {
-      try {
-        localStorage.setItem("wallpaper", reader.result);
-        setWallpaper(reader.result);
+      const img = new Image();
+      img.onload = () => {
+        const maxWidth = 1600;
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const compressed = canvas.toDataURL("image/jpeg", 0.7);
+        if (compressed.length > 900000) {
+          setError(
+            "This image is too large to save. Please choose a smaller one.",
+          );
+          return;
+        }
+        setWallpaper(compressed);
         setError("");
-      } catch {
-        setError(
-          "This file exceeds the size limit. The max file size is 5 MB.",
-        );
-      }
+      };
+      img.src = reader.result;
     };
     reader.readAsDataURL(file);
   }

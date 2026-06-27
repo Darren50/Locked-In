@@ -20,9 +20,6 @@ import hidePassword from "../assets/hide-password.png";
 import todoLight from "../assets/todolist-preview-light.png";
 import calendarLight from "../assets/calendar-preview-light.png";
 import statisticsLight from "../assets/statistics-preview-light.png";
-import todoDark from "../assets/todolist-preview-dark.png";
-import calendarDark from "../assets/calendar-preview-dark.png";
-import statisticsDark from "../assets/statistics-preview-dark.png";
 
 const FADE = "fadeSlideUp 0.55s cubic-bezier(0.22,1,0.36,1) both";
 const FEATURES = [
@@ -30,19 +27,16 @@ const FEATURES = [
     title: "To-Do List",
     desc: "Capture tasks with due dates, and check them off as you stay focused.",
     imgLight: todoLight,
-    imgDark: todoDark,
   },
   {
     title: "Calendar",
     desc: "See your week and month at a glance.",
     imgLight: calendarLight,
-    imgDark: calendarDark,
   },
   {
     title: "Statistics",
     desc: "Track your focus and Pomodoro sessions with weekly insights.",
     imgLight: statisticsLight,
-    imgDark: statisticsDark,
   },
 ];
 
@@ -110,7 +104,7 @@ export default function Login() {
   }
 
   const commonClass =
-    "w-full rounded-lg border border-[var(--app-field-border)] bg-[var(--app-card)] px-3.5 py-2.5 text-sm text-[var(--app-text)] placeholder:text-[var(--app-muted)] transition focus:border-[var(--app-text)] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08] dark:focus:ring-white/10";
+    "w-full rounded-lg border border-[var(--app-field-border)] bg-[var(--app-card)] px-3.5 py-2.5 text-sm text-[var(--app-text)] placeholder:text-[var(--app-muted)] transition focus:border-[var(--app-text)] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08]";
 
   return (
     <div className="fixed inset-0 flex flex-col items-stretch justify-center gap-[15px] overflow-y-auto bg-[var(--app-card)] px-[8%] text-left md:items-start md:pl-[15%] md:pr-0">
@@ -126,12 +120,8 @@ export default function Login() {
             className="group relative flex-1 overflow-hidden rounded-2xl border border-white/20"
           >
             <div
-              className="absolute inset-0 bg-cover bg-center dark:hidden"
+              className="absolute inset-0 bg-cover bg-center"
               style={{ backgroundImage: `url(${f.imgLight})` }}
-            />
-            <div
-              className="absolute inset-0 hidden bg-cover bg-center dark:block"
-              style={{ backgroundImage: `url(${f.imgDark})` }}
             />
             <div className="absolute inset-0 flex items-center justify-center bg-black/40 transition-opacity duration-300 group-hover:opacity-0">
               <span className="text-2xl font-bold text-white">{f.title}</span>
@@ -211,7 +201,7 @@ export default function Login() {
             <img
               src={showPassword ? hidePassword : viewPassword}
               alt=""
-              className="h-[18px] w-[18px] object-contain transition-opacity hover:opacity-60 dark:invert"
+              className="h-[18px] w-[18px] object-contain transition-opacity hover:opacity-60"
             />
           </button>
         </div>
@@ -230,7 +220,7 @@ export default function Login() {
             <button
               type="button"
               onClick={() => setShowForgot(true)}
-              className="cursor-pointer border-none bg-transparent p-0 text-[13px] text-[#2563eb] hover:underline dark:text-blue-400"
+              className="cursor-pointer border-none bg-transparent p-0 text-[13px] text-[#2563eb] hover:underline"
             >
               Forgot Password?
             </button>
@@ -246,14 +236,14 @@ export default function Login() {
       </form>
 
       {error && (
-        <p className="m-0 w-full max-w-[360px] text-[13px] text-[#ef4444] dark:text-red-400">
+        <p className="m-0 w-full max-w-[360px] text-[13px] text-[#ef4444]">
           {error}
         </p>
       )}
 
       <button
         onClick={() => setIsSignUp(!isSignUp)}
-        className="m-0 mt-[18px] w-full max-w-[360px] cursor-pointer self-start border-none bg-transparent text-center text-[13px] text-[#2563eb] transition-colors hover:text-[#1e40af] hover:underline dark:text-blue-400 dark:hover:text-blue-300"
+        className="m-0 mt-[18px] w-full max-w-[360px] cursor-pointer self-start border-none bg-transparent text-center text-[13px] text-[#2563eb] transition-colors hover:text-[#1e40af] hover:underline"
         style={{ animation: FADE, animationDelay: "0.32s" }}
       >
         {isSignUp

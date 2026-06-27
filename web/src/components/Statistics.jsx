@@ -4,11 +4,14 @@ import {
   onSnapshot,
   doc,
   addDoc,
-  updateDoc,
   increment,
   deleteDoc,
+  setDoc,
 } from "firebase/firestore";
 import { database } from "../firebase";
+
+/* System testing */
+import { formatShort } from "@/lib/time";
 
 export default function StatsView({ user }) {
   const [stats, setStats] = useState({
@@ -97,21 +100,6 @@ export default function StatsView({ user }) {
   const card =
     "rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] p-6 shadow-sm";
 
-  /* Time formatting for bar graph */
-  function formatShort(totalMinutes) {
-    const totalSeconds = Math.round((totalMinutes || 0) * 60);
-    if (totalSeconds === 0) return "0m";
-    if (totalSeconds < 60) return `${totalSeconds}s`;
-    const h = Math.floor(totalSeconds / 3600);
-    const m = Math.floor((totalSeconds % 3600) / 60);
-    const s = totalSeconds % 60;
-    const parts = [];
-    if (h > 0) parts.push(`${h}h`);
-    if (m > 0) parts.push(`${m}m`);
-    if (s > 0) parts.push(`${s}s`);
-    return parts.join(" ");
-  }
-
   /* Add session functionality */
   async function handleAddSession() {
     if (selectedDay === null) return;
@@ -147,9 +135,10 @@ export default function StatsView({ user }) {
       if (!stats.lastSessionAt || isoStamp > stats.lastSessionAt) {
         updatePayload.lastSessionAt = isoStamp;
       }
-      await updateDoc(
+      await setDoc(
         doc(database, "users", user.uid, "stats", "summary"),
         updatePayload,
+        { merge: true },
       );
 
       setManualMins("");
@@ -162,10 +151,14 @@ export default function StatsView({ user }) {
 
   async function deleteSession(session) {
     await deleteDoc(doc(database, "users", user.uid, "sessions", session.id));
-    await updateDoc(doc(database, "users", user.uid, "stats", "summary"), {
-      totalFocusMinutes: increment(-(session.durationMinutes || 0)),
-      totalSessions: increment(-1),
-    });
+    await setDoc(
+      doc(database, "users", user.uid, "stats", "summary"),
+      {
+        totalFocusMinutes: increment(-(session.durationMinutes || 0)),
+        totalSessions: increment(-1),
+      },
+      { merge: true },
+    );
   }
 
   return (

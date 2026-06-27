@@ -19,6 +19,9 @@ import {
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { Pencil } from "lucide-react";
 
+/* System testing */
+import { isOverdue } from "@/lib/tasks";
+
 function ToDoList({ user }) {
   const [tasks, setTasks] = useState([]);
   const [newTask, setNewTask] = useState("");
@@ -108,12 +111,6 @@ function ToDoList({ user }) {
         updateDoc(doc(tasksReference(), t.id), { order: i }),
       ),
     );
-  }
-
-  function isOverdue(task) {
-    if (task.done || !task.dueDate) return false;
-    const dueString = `${task.dueDate}T${task.dueTime || "23:59"}`;
-    return new Date(dueString) < new Date();
   }
 
   const commonClass =

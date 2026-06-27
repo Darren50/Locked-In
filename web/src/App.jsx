@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { auth } from "./firebase";
+import { doc, onSnapshot, setDoc } from "firebase/firestore";
+import { auth, database } from "./firebase";
 
 /* Components */
 import Login from "./components/LoginAndRegistration";
@@ -17,12 +18,59 @@ export default function App() {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mainView, setMainView] = useState("tasks");
-  const [darkMode, setDarkMode] = useState(
-    () => localStorage.getItem("theme") === "dark",
-  );
-  const [wallpaper, setWallpaper] = useState(
-    () => localStorage.getItem("wallpaper") || "",
-  );
+  const [darkMode, setDarkMode] = useState(false);
+  const [wallpaper, setWallpaper] = useState("");
+
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+      setUser(currentUser);
+      setLoading(false);
+      if (!currentUser) {
+        setDarkMode(false);
+        setWallpaper("");
+      }
+    });
+    return unsubscribe;
+  }, []);
+
+  /* Load account preferences after logging in */
+  useEffect(() => {
+    if (!user) return;
+    const prefRef = doc(database, "users", user.uid, "settings", "preferences");
+    const unsubscribe = onSnapshot(prefRef, (snap) => {
+      const data = snap.data() || {};
+      setDarkMode(!!data.darkMode);
+      setWallpaper(data.wallpaper || "");
+    });
+    return unsubscribe;
+  }, [user]);
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", darkMode);
+  }, [darkMode]);
+
+  function changeDarkMode(value) {
+    setDarkMode(value);
+    if (user) {
+      setDoc(
+        doc(database, "users", user.uid, "settings", "preferences"),
+        { darkMode: value },
+        { merge: true },
+      );
+    }
+  }
+
+  function changeWallpaper(value) {
+    setWallpaper(value);
+    if (user) {
+      setDoc(
+        doc(database, "users", user.uid, "settings", "preferences"),
+        { wallpaper: value },
+        { merge: true },
+      );
+    }
+  }
+
   const view =
     mainView === "calendar" ? (
       <Calendar user={user} />
@@ -31,35 +79,14 @@ export default function App() {
     ) : mainView === "settings" ? (
       <Settings
         darkMode={darkMode}
-        setDarkMode={setDarkMode}
+        setDarkMode={changeDarkMode}
         wallpaper={wallpaper}
-        setWallpaper={setWallpaper}
+        setWallpaper={changeWallpaper}
+        user={user}
       />
     ) : (
       <ToDoList user={user} />
     );
-
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
-      setUser(currentUser);
-      setLoading(false);
-    });
-    return unsubscribe;
-  }, []);
-
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", darkMode);
-    localStorage.setItem("theme", darkMode ? "dark" : "light");
-  }, [darkMode]);
-
-  useEffect(() => {
-    try {
-      if (wallpaper) localStorage.setItem("wallpaper", wallpaper);
-      else localStorage.removeItem("wallpaper");
-    } catch {
-      //Image too large (5Mb maximum)
-    }
-  }, [wallpaper]);
 
   if (loading) {
     return <p style={{ textAlign: "center", marginTop: 80 }}>Loading...</p>;
