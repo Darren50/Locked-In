@@ -3,24 +3,46 @@ import threading
 
 class FocusMonitor:
     def __init__(self):
-        self.focused    = True
-        self.away_since = None
-        self.AWAY_LIMIT = 3.0
-        self._lock      = threading.Lock()
+        self.focused = True
+        self.state   = "FOCUSED"
+        self._since  = None
+        self._reason = None
+        self.AWAY_LIMIT   = 3.0
+        self.DROWSY_LIMIT = 2.0
+        self._lock = threading.Lock()
 
-    def update(self, face_detected):
+    def update(self, face_detected, looking_away=False, eyes_closed=False):
         with self._lock:
-            if face_detected:
-                self.focused    = True
-                self.away_since = None
+            now = time.time()
+            if not face_detected:
+                reason = "AWAY"
+            elif eyes_closed:
+                reason = "DROWSY"
+            elif looking_away:
+                reason = "DISTRACTED"
             else:
-                if self.away_since is None:
-                    self.away_since = time.time()
-                if time.time() - self.away_since >= self.AWAY_LIMIT:
+                reason = None
+
+            if reason is None:
+                self.focused = True
+                self.state   = "FOCUSED"
+                self._since  = None
+                self._reason = None
+            else:
+                if self._since is None or self._reason != reason:
+                    self._since  = now
+                    self._reason = reason
+                grace = self.DROWSY_LIMIT if reason == "DROWSY" else self.AWAY_LIMIT
+                if now - self._since >= grace:
                     self.focused = False
+                    self.state   = reason
 
     def is_focused(self):
         with self._lock:
             return self.focused
+
+    def get_state(self):
+        with self._lock:
+            return self.state
 
 focus = FocusMonitor()
