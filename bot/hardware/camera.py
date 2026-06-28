@@ -17,26 +17,50 @@ def _camera_thread():
     mp_mesh  = mp.solutions.face_mesh
     detector = mp_mesh.FaceMesh(
         max_num_faces=1,
-        refine_landmarks=True,
-        min_detection_confidence=0.5,
-        min_tracking_confidence=0.5,
+        refine_landmarks=False,
+        min_detection_confidence=0.4,
+        min_tracking_confidence=0.4,
     )
-    was_focused = True
+
+    TOL          = 0.18      # deviation from baseline that counts as "away"
+    CALIB_FRAMES = 30        # ~3 s of calibration at start of a session
+    baseline     = None
+    calib        = []
+    last_session = None
+    was_focused  = True
 
     while True:
         frame   = cam.capture_array()
         results = detector.process(frame)
+        ts      = timer.state()
+
+        # Re-calibrate whenever a NEW focus session begins
+        if ts['active'] and ts['mode'] == "FOCUS" and ts['session'] != last_session:
+            baseline = None
+            calib    = []
+            last_session = ts['session']
 
         if results.multi_face_landmarks:
-            lm = results.multi_face_landmarks[0].landmark
-            away,   yaw, pitch = vision.looking_away(lm, W, H)
-            closed, ear        = vision.eyes_closed(lm, W, H)
+            lm          = results.multi_face_landmarks[0].landmark
+            r           = vision.horizontal_ratio(lm)
+            closed, ear = vision.eyes_closed(lm, W, H)
+
+            if baseline is None:
+                calib.append(r)
+                if len(calib) >= CALIB_FRAMES:
+                    baseline = sum(calib) / len(calib)
+                    print(f"Calibrated baseline = {baseline:.3f}")
+                away = False                     # don't flag while calibrating
+            else:
+                away = abs(r - baseline) > TOL    # FIXED baseline — no drift
+
             focus.update(True, looking_away=away, eyes_closed=closed)
-            # print(f"yaw={yaw:5.1f} pitch={pitch:5.1f} ear={ear:.3f} state={focus.get_state()}")
+            print(f"r={r:.3f} base={baseline} away={away} "
+                  f"ear={ear:.3f} -> {focus.get_state()}")
         else:
             focus.update(False)
+            print("NO FACE")
 
-        ts = timer.state()
         if ts['active'] and ts['mode'] == "FOCUS":
             if not focus.is_focused() and not ts['paused']:
                 timer.toggle_pause()

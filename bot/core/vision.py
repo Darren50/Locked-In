@@ -26,26 +26,17 @@ def eyes_closed(landmarks, w, h, thresh=0.20):
     ear = (_ear(landmarks, LEFT_EYE, w, h) + _ear(landmarks, RIGHT_EYE, w, h)) / 2.0
     return ear < thresh, ear
 
-def head_pose(landmarks, w, h):
-    image_points = np.array(
-        [(landmarks[i].x * w, landmarks[i].y * h) for i in POSE_IDX],
-        dtype=np.float64,
-    )
-    focal = w
-    cam_matrix = np.array([
-        [focal, 0,     w / 2],
-        [0,     focal, h / 2],
-        [0,     0,     1],
-    ], dtype=np.float64)
-    dist = np.zeros((4, 1))
-    ok, rvec, _ = cv2.solvePnP(MODEL_POINTS, image_points, cam_matrix, dist,
-                               flags=cv2.SOLVEPNP_ITERATIVE)
-    if not ok:
-        return 0.0, 0.0
-    rmat, _ = cv2.Rodrigues(rvec)
-    angles, *_ = cv2.RQDecomp3x3(rmat)
-    return angles[1], angles[0]   # yaw, pitch
+NOSE_TIP   = 1
+LEFT_EDGE  = 234     # left boundary of face
+RIGHT_EDGE = 454     # right boundary of face
 
-def looking_away(landmarks, w, h, yaw_thresh=25.0, pitch_up_thresh=20.0):
-    yaw, pitch = head_pose(landmarks, w, h)
-    return (abs(yaw) > yaw_thresh) or (pitch > pitch_up_thresh), yaw, pitch
+def horizontal_ratio(landmarks):
+    """0.5 = nose centered (facing forward); drifts toward 0 or 1 when turned."""
+    nose  = landmarks[NOSE_TIP].x
+    left  = landmarks[LEFT_EDGE].x
+    right = landmarks[RIGHT_EDGE].x
+    return (nose - left) / ((right - left) + 1e-6)
+
+def looking_away(landmarks, w, h, center=0.5, tol=0.18):
+    r = horizontal_ratio(landmarks)
+    return abs(r - center) > tol, r

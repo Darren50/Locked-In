@@ -15,8 +15,11 @@ def draw_pomodoro(ts):
     bg_badge = (60, 15, 15)   if ts['mode'] == "FOCUS" else (15, 55, 25)
 
     draw.text((12, 10), "LOCKED IN", fill=(160, 160, 220), font=FONT_MED)
-    draw.rounded_rectangle([200, 7, 308, 30], radius=7, fill=bg_badge, outline=accent, width=1)
-    draw.text((208, 11), "BREAK" if "BREAK" in ts['mode'] else ts['mode'], fill=accent, font=FONT_SMALL)
+    draw.rounded_rectangle([200, 7, 308, 30], radius=7,
+                            fill=bg_badge, outline=accent, width=1)
+    draw.text((208, 11),
+              "BREAK" if "BREAK" in ts['mode'] else ts['mode'],
+              fill=accent, font=FONT_SMALL)
 
     mins, secs = divmod(ts['time_left'], 60)
 
@@ -31,20 +34,31 @@ def draw_pomodoro(ts):
 
     draw.text((45, 75), f"{mins:02d}:{secs:02d}", fill=timer_col, font=FONT_BIG)
 
+    # ── State-specific warning banner ──
     if not focus.is_focused() and ts['active'] and ts['mode'] == "FOCUS":
-        draw.rounded_rectangle([10, 50, 310, 72], radius=6, fill=(180, 40, 40))
-        draw.text((30, 55), "⚠ Come back! Timer paused.", fill="white", font=FONT_SMALL)
+        state = focus.get_state()
+        if state == "DROWSY":
+            banner_col, msg = (180, 130, 0),  "⚠ Wake up! Timer paused."
+        elif state == "DISTRACTED":
+            banner_col, msg = (190, 90, 0),   "⚠ Eyes on your work!"
+        else:  # AWAY
+            banner_col, msg = (180, 40, 40),  "⚠ Come back! Timer paused."
+        draw.rounded_rectangle([10, 50, 310, 72], radius=6, fill=banner_col)
+        draw.text((22, 55), msg, fill="white", font=FONT_SMALL)
 
     bar_w = int(300 * (ts['total'] - ts['time_left']) / max(ts['total'], 1))
     draw.rectangle([10, 185, 310, 191], fill=(40, 40, 60))
     draw.rectangle([10, 185, 10+bar_w, 191], fill=accent)
 
-    draw.text((12, 200), f"Session {ts['session']} of {SESSIONS_BEFORE_LONG}", fill=(120, 120, 140), font=FONT_SMALL)
+    draw.text((12, 200), f"Session {ts['session']} of {SESSIONS_BEFORE_LONG}",
+              fill=(120, 120, 140), font=FONT_SMALL)
 
     if not ts['active']:
-        draw.text((12, 222), "K1 Start                        K4 Home", fill=(60, 60, 80), font=FONT_SMALL)
+        draw.text((12, 222), "K1 Start                        K4 Home",
+                  fill=(60, 60, 80), font=FONT_SMALL)
     else:
-        draw.text((12, 222), "K1 Pause  K2 Skip  K3 End  K4 Home", fill=(60, 60, 80), font=FONT_SMALL)
+        draw.text((12, 222), "K1 Pause  K2 Skip  K3 End  K4 Home",
+                  fill=(60, 60, 80), font=FONT_SMALL)
     return img
 
 def run_pomodoro(last_img=None):
