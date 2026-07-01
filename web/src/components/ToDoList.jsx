@@ -1,170 +1,314 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect } from "react";
 import { database } from "../firebase";
-import { collection, doc, onSnapshot, setDoc, deleteDoc, updateDoc} from "firebase/firestore";
-import "./ToDoList.css";
+import {
+  collection,
+  doc,
+  onSnapshot,
+  setDoc,
+  deleteDoc,
+  updateDoc,
+} from "firebase/firestore";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import { Pencil } from "lucide-react";
 
-function ToDoList({user}) {
-    const[tasks, setTasks] = useState([]);
-    const[newTask, setNewTask] = useState("");
-    const[newDesc, setNewDesc] = useState("");
-    const[newDueDate, setNewDueDate] = useState("");
-    const[newDueTime, setNewDueTime] = useState("");
+/* System testing */
+import { isOverdue } from "@/lib/tasks";
 
-    useEffect(() => { //To load tasks from the database in real time
-        if (!user) return;
-        const tasksCollection = collection(database, "users", user.uid, "tasks");
-        const unsubscribe = onSnapshot(tasksCollection, (snapshot) => {
-            const tasksData = snapshot.docs.map(d => ({ id: d.id, ...d.data() })).sort((a, b) => a.order - b.order);
-            setTasks(tasksData);
-        })
-        return unsubscribe;
-    }, [user]);
+function ToDoList({ user }) {
+  const [tasks, setTasks] = useState([]);
+  const [newTask, setNewTask] = useState("");
+  const [newDesc, setNewDesc] = useState("");
+  const [newDueDate, setNewDueDate] = useState("");
+  const [newDueTime, setNewDueTime] = useState("");
 
-    function tasksReference() {
-        return collection(database, "users", user.uid, "tasks");
+  const [editTask, setEditTask] = useState(null);
+  const [editText, setEditText] = useState("");
+  const [editDesc, setEditDesc] = useState("");
+  const [editDueDate, setEditDueDate] = useState("");
+  const [editDueTime, setEditDueTime] = useState("");
+
+  useEffect(() => {
+    if (!user) return;
+    const tasksCollection = collection(database, "users", user.uid, "tasks");
+    const unsubscribe = onSnapshot(tasksCollection, (snapshot) => {
+      const tasksData = snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => a.order - b.order);
+      setTasks(tasksData);
+    });
+    return unsubscribe;
+  }, [user]);
+
+  function tasksReference() {
+    return collection(database, "users", user.uid, "tasks");
+  }
+
+  async function addTask(e) {
+    e.preventDefault();
+    if (newTask.trim() !== "") {
+      const newAdd = crypto.randomUUID();
+      await setDoc(doc(tasksReference(), newAdd), {
+        text: newTask,
+        description: newDesc,
+        dueDate: newDueDate,
+        dueTime: newDueTime,
+        done: false,
+        order: tasks.length,
+      });
+      setNewTask("");
+      setNewDesc("");
+      setNewDueDate("");
+      setNewDueTime("");
     }
+  }
 
-    async function addTask(event) { //Also allows the user to key in due date and time, and description
-        event.preventDefault();
-        if (newTask.trim() !== "") {
-            const newAdd = crypto.randomUUID(); //Used to generate a unique id for each task for the database and also helps with React's rendering 
-            await setDoc(doc(tasksReference(), newAdd), {
-                text: newTask,
-                description: newDesc,
-                dueDate: newDueDate,
-                dueTime: newDueTime,
-                done: false,
-                order: tasks.length
-            });
-            setNewTask("");
-            setNewDesc("");
-            setNewDueDate("");
-            setNewDueTime("");
-        }
-    }
+  async function toggleTaskDone(index) {
+    const t = tasks[index];
+    await updateDoc(doc(tasksReference(), t.id), { done: !t.done });
+  }
 
-    async function toggleTaskDone(index) {
-        const updatedTask = tasks[index];
-        await updateDoc(doc(tasksReference(), updatedTask.id), {
-            done: !updatedTask.done
-        });
-    }
+  async function deleteTask(index) {
+    await deleteDoc(doc(tasksReference(), tasks[index].id));
+  }
 
-    async function deleteTask(index) {
-        const taskToDelete = tasks[index];
-        await deleteDoc(doc(tasksReference(), taskToDelete.id));
-    }
+  function openEdit(task) {
+    setEditTask(task);
+    setEditText(task.text || "");
+    setEditDesc(task.description || "");
+    setEditDueDate(task.dueDate || "");
+    setEditDueTime(task.dueTime || "");
+  }
 
-    async function moveTaskDown(index) {
-        if (index < tasks.length - 1) {
-            await updateDoc(doc(tasksReference(), tasks[index].id), {
-                order: index + 1
-            });
-            await updateDoc(doc(tasksReference(), tasks[index + 1].id), {
-                order: index
-            });
-        }
-    }
+  async function saveEdit(e) {
+    e.preventDefault();
+    if (editText.trim() === "") return;
+    await updateDoc(doc(tasksReference(), editTask.id), {
+      text: editText,
+      description: editDesc,
+      dueDate: editDueDate,
+      dueTime: editDueTime,
+    });
+    setEditTask(null);
+  }
 
-    async function moveTaskUp(index) {
-        if (index > 0) {
-            await updateDoc(doc(tasksReference(), tasks[index].id), {
-                order: index - 1
-            });
-            await updateDoc(doc(tasksReference(), tasks[index - 1].id), {
-                order: index
-            });
-        }
-    }
-    
-    return (
-    <div className = "to-do-list">
-        { /* Header and title */ }
-        <h1>Locked-In</h1>
-        <h2>To do list</h2>
+  async function onDragEnd(result) {
+    const { source, destination } = result;
+    if (!destination || destination.index === source.index) return;
+    const reordered = Array.from(tasks);
+    const [moved] = reordered.splice(source.index, 1);
+    reordered.splice(destination.index, 0, moved);
+    setTasks(reordered);
+    await Promise.all(
+      reordered.map((t, i) =>
+        updateDoc(doc(tasksReference(), t.id), { order: i }),
+      ),
+    );
+  }
 
-        { /* To key in new tasks, descriptions, due dates and times */ }
-        <div>
-            <form onSubmit={addTask} className="task-form">
+  const commonClass =
+    "w-full rounded-lg border border-[var(--app-field-border)] bg-[var(--app-card)] px-3.5 py-[11px] text-sm text-[var(--app-text)] placeholder:text-[var(--app-muted)] transition focus:border-[var(--app-text)] focus:outline-none focus:ring-[3px] focus:ring-black/[0.08] dark:focus:ring-white/10";
 
-                {/* Task name and description input fields */}
-                <div className="task-form-row">
-                    <input
-                        className="task-input task-name"
-                        type="text"
-                        placeholder="Enter a task"
-                        value={newTask}
-                        onChange={(event) => setNewTask(event.target.value)}
-                    />
-                    <input
-                        className="task-input task-description"
-                        type="text"
-                        placeholder="Description (optional)"
-                        value={newDesc}
-                        onChange={(event) => setNewDesc(event.target.value)}
-                    />
-                </div>
+  const iconBtn =
+    "flex size-7 cursor-pointer items-center justify-center rounded-md bg-black/5 text-[var(--app-subtle)] transition-colors hover:bg-black/10 hover:text-[var(--app-text)] dark:bg-white/10 dark:hover:bg-white/20";
 
-                {/* Due date and time input fields */}
-                <div className="task-form-row">
-                    <label className="task-label">
-                        Due date:
-                        <input
-                            className="task-input task-due-date"
-                            type="date"
-                            value={newDueDate}
-                            onChange={(event) => setNewDueDate(event.target.value)}
-                        />
-                    </label>    
-                    <label className="task-label">
-                        Due time:
-                        <input
-                            className="task-input task-due-time"
-                            type="time"
-                            value={newDueTime}
-                            onChange={(event) => setNewDueTime(event.target.value)}
-                        />
-                    </label>
-                    <button className="add-button">Add</button>
-                </div>
+  return (
+    <div className="mx-auto max-w-[700px] px-5 pb-20 pt-10 text-left">
+      <header className="mb-7 text-center">
+        <h1 className="m-0 text-[40px] font-bold text-[var(--app-text)]">
+          Tasks
+        </h1>
+      </header>
 
-            </form>
+      <form
+        onSubmit={addTask}
+        className="mb-7 flex flex-col gap-3 rounded-[14px] border border-[var(--app-border)] bg-[var(--app-card)] p-4 shadow-[0_4px_14px_rgba(0,0,0,0.05)]"
+      >
+        <input
+          type="text"
+          placeholder="What needs to be done?"
+          value={newTask}
+          onChange={(e) => setNewTask(e.target.value)}
+          className={`${commonClass} text-[15px] font-medium`}
+        />
+        <input
+          type="text"
+          placeholder="Add a description (optional)"
+          value={newDesc}
+          onChange={(e) => setNewDesc(e.target.value)}
+          className={`${commonClass} text-[15px] font-medium`}
+        />
+        <div className="flex items-end gap-3">
+          <label className="flex flex-1 flex-col text-[12px] text-[var(--app-muted)]">
+            Due date
+            <input
+              type="date"
+              value={newDueDate}
+              onChange={(e) => setNewDueDate(e.target.value)}
+              className={`${commonClass} cursor-pointer`}
+            />
+          </label>
+          <label className="flex flex-1 flex-col text-[12px] text-[var(--app-muted)]">
+            Due time
+            <input
+              type="time"
+              value={newDueTime}
+              onChange={(e) => setNewDueTime(e.target.value)}
+              className={`${commonClass} cursor-pointer`}
+            />
+          </label>
+          <button
+            type="submit"
+            className="cursor-pointer whitespace-nowrap rounded-lg bg-[var(--app-primary)] px-[18px] py-[13px] text-sm font-semibold text-[var(--app-primary-text)] hover:opacity-90 hover:shadow-[0_6px_18px_rgba(0,0,0,0.18)] active:translate-y-0 active:shadow-none"
+          >
+            + Add task
+          </button>
         </div>
+      </form>
 
-        {/* When there are no tasks, show this message */}
-        {tasks.length === 0 && (
-            <p className="no-tasks-message">No tasks yet. Add a task to get focused.</p>
-        )}
+      {tasks.length === 0 && (
+        <p className="mt-10 text-center text-[15px] text-[var(--app-muted)]">
+          No tasks yet
+        </p>
+      )}
 
-        <ol>
-            {tasks.map((task, index) => 
-                <li key={index}>
-                    <input
-                        type="checkbox" 
+      <DragDropContext onDragEnd={onDragEnd}>
+        <Droppable droppableId="tasks">
+          {(provided) => (
+            <ul
+              ref={provided.innerRef}
+              {...provided.droppableProps}
+              className="m-0 flex list-none flex-col gap-[5px] p-0"
+            >
+              {tasks.map((task, index) => (
+                <Draggable key={task.id} draggableId={task.id} index={index}>
+                  {(prov, snapshot) => (
+                    <li
+                      ref={prov.innerRef}
+                      {...prov.draggableProps}
+                      {...prov.dragHandleProps}
+                      className={`group flex items-start gap-3 rounded-xl border border-[var(--app-border)] bg-[var(--app-card)] px-4 py-3.5 shadow-[0_2px_8px_rgba(0,0,0,0.04)] transition-shadow ${snapshot.isDragging ? "shadow-[0_12px_28px_rgba(0,0,0,0.18)]" : ""} ${task.done ? "opacity-60" : ""} cursor-grab active:cursor-grabbing`}
+                    >
+                      <Checkbox
                         checked={task.done}
-                        onChange={() => toggleTaskDone(index)}
-                    />
+                        onCheckedChange={() => toggleTaskDone(index)}
+                        className="mt-0.5 size-5 rounded-md border-[var(--app-field-border)] data-checked:border-[#16a34a] data-checked:bg-[#16a34a] data-checked:text-white dark:data-checked:border-[#16a34a] dark:data-checked:bg-[#16a34a]"
+                      />
 
-                    {/* If task is done, do a strikethrough */}
-                    <span className={task.done ? "text done" : "text"}>
-                        {task.text}
-                    </span>
+                      <div className="min-w-0 flex-1">
+                        <span
+                          className={`text-[15px] font-medium ${task.done ? "text-[var(--app-muted)]" : "text-[var(--app-text)]"}`}
+                        >
+                          {task.text}
+                        </span>
+                        {task.description && (
+                          <p className="mt-1 text-[13px] text-[var(--app-subtle)]">
+                            {task.description}
+                          </p>
+                        )}
+                        {(task.dueDate || task.dueTime) && (
+                          <span
+                            className={`mt-2 inline-block rounded-md px-2 py-[3px] text-[12px] ${isOverdue(task) ? "bg-red-500/10 font-medium text-red-600 dark:text-red-400" : "bg-black/5 text-[var(--app-subtle)] dark:bg-white/10"}`}
+                          >
+                            {task.dueDate} {task.dueTime}
+                            {isOverdue(task) && " · Overdue"}
+                          </span>
+                        )}
+                      </div>
 
-                    {task.description && <p className="description">{task.description}</p>}
-                    {(task.dueDate || task.dueTime) && (
-                        <div className="task-due">
-                            Due: {task.dueDate} {task.dueTime} 
-                        </div>
-                    )}
+                      <div className="flex shrink-0 gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                        <button
+                          type="button"
+                          onClick={() => openEdit(task)}
+                          title="Edit"
+                          className={iconBtn}
+                        >
+                          <Pencil size={13} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => deleteTask(index)}
+                          title="Delete"
+                          className="flex size-7 cursor-pointer items-center justify-center rounded-md bg-black/5 text-sm text-[var(--app-subtle)] transition-colors hover:bg-red-500/10 hover:text-red-600 dark:bg-white/10 dark:hover:bg-red-500/20 dark:hover:text-red-400"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </li>
+                  )}
+                </Draggable>
+              ))}
+              {provided.placeholder}
+            </ul>
+          )}
+        </Droppable>
+      </DragDropContext>
 
-                    <button className="delete-button" onClick={() => deleteTask(index)}>Delete</button>
-                    <button className="move-button" onClick={() => moveTaskUp(index)}>Move up</button>
-                    <button className="move-button" onClick={() => moveTaskDown(index)}>Move down</button>
-                </li>
-            )}
-        </ol>
+      <Dialog
+        open={!!editTask}
+        onOpenChange={(open) => {
+          if (!open) setEditTask(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle className="text-foreground">Edit task</DialogTitle>
+          </DialogHeader>
+          <form onSubmit={saveEdit} className="flex flex-col gap-3">
+            <input
+              type="text"
+              placeholder="Task name"
+              value={editText}
+              onChange={(e) => setEditText(e.target.value)}
+              className={commonClass}
+            />
+            <input
+              type="text"
+              placeholder="Description"
+              value={editDesc}
+              onChange={(e) => setEditDesc(e.target.value)}
+              className={commonClass}
+            />
+            <div className="flex gap-3">
+              <label className="flex flex-1 flex-col gap-1 text-[12px] text-[var(--app-muted)]">
+                Due date
+                <input
+                  type="date"
+                  value={editDueDate}
+                  onChange={(e) => setEditDueDate(e.target.value)}
+                  className={commonClass}
+                />
+              </label>
+              <label className="flex flex-1 flex-col gap-1 text-[12px] text-[var(--app-muted)]">
+                Due time
+                <input
+                  type="time"
+                  value={editDueTime}
+                  onChange={(e) => setEditDueTime(e.target.value)}
+                  className={commonClass}
+                />
+              </label>
+            </div>
+            <DialogFooter className="mt-2">
+              <button
+                type="submit"
+                className="cursor-pointer rounded-lg bg-[var(--app-primary)] px-[18px] py-2.5 text-sm font-semibold text-[var(--app-primary-text)] transition-all hover:opacity-90"
+              >
+                Save changes
+              </button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
     </div>
-    )
+  );
 }
 
-export default ToDoList
+export default ToDoList;
