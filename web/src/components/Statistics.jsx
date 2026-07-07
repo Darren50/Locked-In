@@ -24,6 +24,7 @@ export default function StatsView({ user }) {
   const [manualSecs, setManualSecs] = useState("");
   const [adding, setAdding] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
+  const [weekOffset, setWeekOffset] = useState(0);
 
   useEffect(() => {
     if (!user) return;
@@ -49,7 +50,7 @@ export default function StatsView({ user }) {
     const diffToMonday = day === 0 ? -6 : 1 - day;
     const monday = new Date(now);
     monday.setHours(0, 0, 0, 0);
-    monday.setDate(now.getDate() + diffToMonday);
+    monday.setDate(now.getDate() + diffToMonday + weekOffset * 7);
 
     const labels = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
     return labels.map((label, i) => {
@@ -80,6 +81,13 @@ export default function StatsView({ user }) {
   }
 
   const week = getWeekData();
+  const weekLabel = `${week[0].date.toLocaleDateString([], {
+    day: "numeric",
+    month: "short",
+  })} - ${week[6].date.toLocaleDateString([], {
+    day: "numeric",
+    month: "short",
+  })}`;
   const maxMinutes = Math.max(60, ...week.map((d) => d.focusMinutes));
   const totalSeconds = Math.round((stats.totalFocusMinutes || 0) * 60);
   const hours = Math.floor(totalSeconds / 3600);
@@ -188,9 +196,50 @@ export default function StatsView({ user }) {
       {/* Weekly graph */}
       <div className={card}>
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-[var(--app-text)]">
-            Weekly Focus
-          </h2>
+          <div className="flex items-center gap-3">
+            <h2 className="text-lg font-bold text-[var(--app-text)]">
+              Weekly Focus
+            </h2>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => {
+                  setWeekOffset((v) => v - 1);
+                  setSelectedDay(null);
+                  setShowManual(false);
+                }}
+                title="Previous week"
+                className="flex size-7 cursor-pointer items-center justify-center rounded-md text-base text-[var(--app-subtle)] transition hover:bg-black/5 hover:text-[var(--app-text)] dark:hover:bg-white/5"
+              >
+                ‹
+              </button>
+              <span className="min-w-[110px] text-center text-sm text-[var(--app-subtle)]">
+                {weekLabel}
+              </span>
+              <button
+                onClick={() => {
+                  setWeekOffset((v) => v + 1);
+                  setSelectedDay(null);
+                  setShowManual(false);
+                }}
+                title="Next week"
+                className="flex size-7 cursor-pointer items-center justify-center rounded-md text-base text-[var(--app-subtle)] transition hover:bg-black/5 hover:text-[var(--app-text)] dark:hover:bg-white/5"
+              >
+                ›
+              </button>
+              {weekOffset !== 0 && (
+                <button
+                  onClick={() => {
+                    setWeekOffset(0);
+                    setSelectedDay(null);
+                    setShowManual(false);
+                  }}
+                  className="ml-1 cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-blue-600 hover:bg-blue-500/10 dark:text-blue-400"
+                >
+                  Go to this week
+                </button>
+              )}
+            </div>
+          </div>
           <button
             onClick={() => setShowManual((v) => !v)}
             disabled={selectedDay === null}
