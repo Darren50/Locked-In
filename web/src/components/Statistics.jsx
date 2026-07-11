@@ -9,9 +9,71 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { database } from "../firebase";
+import { Flame } from "lucide-react";
 
 /* System testing */
 import { formatShort } from "@/lib/time";
+
+function toDateKey(d) {
+  const dt = new Date(d);
+  return `${dt.getFullYear()}-${dt.getMonth()}-${dt.getDate()}`;
+}
+
+function computeStreak(sessions) {
+  const days = new Set(sessions.map((s) => toDateKey(s.startedAt)));
+  const cursor = new Date();
+  cursor.setHours(0, 0, 0, 0);
+  if (!days.has(toDateKey(cursor))) {
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  let streak = 0;
+  while (days.has(toDateKey(cursor))) {
+    streak++;
+    cursor.setDate(cursor.getDate() - 1);
+  }
+  return streak;
+}
+
+function ProgressRing({ pct }) {
+  const r = 20;
+  const circ = 2 * Math.PI * r;
+  const offset = circ - (pct / 100) * circ;
+  return (
+    <svg width="54" height="54" viewBox="0 0 54 54" className="shrink-0">
+      <circle
+        cx="27"
+        cy="27"
+        r={r}
+        fill="none"
+        strokeWidth="5"
+        className="stroke-black/10 dark:stroke-white/10"
+      />
+      <circle
+        cx="27"
+        cy="27"
+        r={r}
+        fill="none"
+        strokeWidth="5"
+        strokeLinecap="round"
+        strokeDasharray={circ}
+        strokeDashoffset={offset}
+        transform="rotate(-90 27 27)"
+        className="stroke-blue-600 dark:stroke-blue-400"
+        style={{ transition: "stroke-dashoffset 0.4s ease" }}
+      />
+      <text
+        x="27"
+        y="27"
+        textAnchor="middle"
+        dominantBaseline="central"
+        className="fill-[var(--app-text)]"
+        style={{ fontSize: 11, fontWeight: 600 }}
+      >
+        {pct}%
+      </text>
+    </svg>
+  );
+}
 
 export default function StatsView({ user }) {
   const [stats, setStats] = useState({
@@ -25,6 +87,8 @@ export default function StatsView({ user }) {
   const [adding, setAdding] = useState(false);
   const [selectedDay, setSelectedDay] = useState(null);
   const [weekOffset, setWeekOffset] = useState(0);
+  const [editGoal, setEditGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -104,6 +168,16 @@ export default function StatsView({ user }) {
         new Date(s.startedAt) > new Date(latest.startedAt) ? s : latest,
       )
     : null;
+  const dailyGoal = stats.dailyGoalMinutes || 60;
+  const todayKey = toDateKey(new Date());
+  const todayMinutes = sessions
+    .filter((s) => toDateKey(s.startedAt) === todayKey)
+    .reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+  const goalPct =
+    dailyGoal > 0
+      ? Math.min(100, Math.round((todayMinutes / dailyGoal) * 100))
+      : 0;
+  const streak = computeStreak(sessions);
 
   const card =
     "rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] p-6 shadow-sm";
@@ -157,6 +231,7 @@ export default function StatsView({ user }) {
     }
   }
 
+  /* Delete session functionality */
   async function deleteSession(session) {
     await deleteDoc(doc(database, "users", user.uid, "sessions", session.id));
     await setDoc(
@@ -167,6 +242,18 @@ export default function StatsView({ user }) {
       },
       { merge: true },
     );
+  }
+
+  /* Save daily goal functionality */
+  async function saveGoal() {
+    const g = parseInt(goalInput);
+    if (!g || g <= 0) return;
+    await setDoc(
+      doc(database, "users", user.uid, "stats", "summary"),
+      { dailyGoalMinutes: g },
+      { merge: true },
+    );
+    setEditGoal(false);
   }
 
   return (
@@ -189,6 +276,74 @@ export default function StatsView({ user }) {
           </div>
           <div className="mt-1 text-sm text-[var(--app-subtle)]">
             Pomodoro sessions completed
+          </div>
+        </div>
+      </div>
+
+      {/* Streak */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className={`${card} flex items-center gap-4`}>
+          <div className="flex size-12 shrink-0 items-center justify-center rounded-full bg-orange-500/10">
+            <Flame className="text-orange-500" size={26} />
+          </div>
+          <div>
+            <div className="text-[28px] font-bold leading-tight text-[var(--app-text)]">
+              {streak} {streak === 1 ? "day" : "days"}
+            </div>
+            <div className="text-sm text-[var(--app-subtle)]">
+              {streak > 0
+                ? "Current focus streak"
+                : "Study today to start a streak"}
+            </div>
+          </div>
+        </div>
+
+        {/* Daily goal */}
+        <div className={`${card} flex items-center gap-4`}>
+          <ProgressRing pct={goalPct} />
+          <div className="flex-1">
+            {editGoal ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="number"
+                  min="1"
+                  value={goalInput}
+                  onChange={(e) => setGoalInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") saveGoal();
+                  }}
+                  className="w-20 rounded-lg border border-[var(--app-field-border)] bg-[var(--app-card)] px-2 py-1.5 text-sm text-[var(--app-text)] outline-none focus:border-blue-500"
+                />
+                <span className="text-sm text-[var(--app-subtle)]">min</span>
+                <button
+                  onClick={saveGoal}
+                  className="cursor-pointer rounded-lg bg-blue-600 px-3 py-1.5 text-sm font-semibold text-white hover:bg-blue-700"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <>
+                <div className="text-[28px] font-bold leading-tight text-[var(--app-text)]">
+                  {formatShort(todayMinutes)}
+                  <span className="ml-1 text-sm font-medium text-[var(--app-subtle)]">
+                    / {dailyGoal}m today
+                  </span>
+                </div>
+                <div className="mt-0.5 flex items-center gap-2 text-sm text-[var(--app-subtle)]">
+                  Daily goal
+                  <button
+                    onClick={() => {
+                      setGoalInput(String(dailyGoal));
+                      setEditGoal(true);
+                    }}
+                    className="cursor-pointer text-blue-600 hover:underline dark:text-blue-400"
+                  >
+                    Edit
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
