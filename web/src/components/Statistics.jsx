@@ -9,10 +9,27 @@ import {
   setDoc,
 } from "firebase/firestore";
 import { database } from "../firebase";
-import { Flame } from "lucide-react";
+import {
+  Flame,
+  Clock,
+  Timer,
+  TrendingUp,
+  TrendingDown,
+  CalendarCheck,
+} from "lucide-react";
 
 /* System testing */
 import { formatShort } from "@/lib/time";
+
+const WEEKDAYS = [
+  "Sundays",
+  "Mondays",
+  "Tuesdays",
+  "Wednesdays",
+  "Thursdays",
+  "Fridays",
+  "Saturdays",
+];
 
 function toDateKey(d) {
   const dt = new Date(d);
@@ -73,6 +90,65 @@ function ProgressRing({ pct }) {
       </text>
     </svg>
   );
+}
+
+function weekBounds(offset) {
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const day = now.getDay();
+  const diffToMonday = day === 0 ? -6 : 1 - day;
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + diffToMonday + offset * 7);
+  const nextMonday = new Date(monday);
+  nextMonday.setDate(monday.getDate() + 7);
+  return [monday, nextMonday];
+}
+
+function weekTotal(sessions, offset) {
+  const [start, end] = weekBounds(offset);
+  return sessions
+    .filter((s) => {
+      const t = new Date(s.startedAt);
+      return t >= start && t < end;
+    })
+    .reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
+}
+
+function hourRange(h) {
+  const to12 = (x) => (x % 12 === 0 ? 12 : x % 12);
+  const period = (x) => (x < 12 ? "am" : "pm");
+  const a = h;
+  const b = (h + 2) % 24;
+  return period(a) === period(b)
+    ? `${to12(a)}–${to12(b)}${period(b)}`
+    : `${to12(a)}${period(a)}–${to12(b)}${period(b)}`;
+}
+
+function focusInsights(sessions) {
+  if (!sessions.length) return null;
+  const longest = sessions.reduce(
+    (m, s) => Math.max(m, s.durationMinutes || 0),
+    0,
+  );
+  const byHour = new Array(24).fill(0);
+  const byDay = new Array(7).fill(0);
+  for (const s of sessions) {
+    const t = new Date(s.startedAt);
+    byHour[t.getHours()] += s.durationMinutes || 0;
+    byDay[t.getDay()] += s.durationMinutes || 0;
+  }
+  let peakHour = 0;
+  for (let h = 1; h < 24; h++) if (byHour[h] > byHour[peakHour]) peakHour = h;
+  let peakDay = 0;
+  for (let d = 1; d < 7; d++) if (byDay[d] > byDay[peakDay]) peakDay = d;
+  return {
+    longest,
+    peakHour,
+    peakDay,
+    hasHourData: byHour[peakHour] > 0,
+    thisWeek: weekTotal(sessions, 0),
+    lastWeek: weekTotal(sessions, -1),
+  };
 }
 
 export default function StatsView({ user }) {
@@ -178,6 +254,13 @@ export default function StatsView({ user }) {
       ? Math.min(100, Math.round((todayMinutes / dailyGoal) * 100))
       : 0;
   const streak = computeStreak(sessions);
+  const insights = focusInsights(sessions);
+  const weekDelta =
+    insights && insights.lastWeek > 0
+      ? Math.round(
+          ((insights.thisWeek - insights.lastWeek) / insights.lastWeek) * 100,
+        )
+      : null;
 
   const card =
     "rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] p-6 shadow-sm";
@@ -346,6 +429,103 @@ export default function StatsView({ user }) {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Focus insights */}
+      <div className={card}>
+        <h2 className="mb-4 text-lg font-bold text-[var(--app-text)]">
+          Focus Insights
+        </h2>
+        {insights ? (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
+                <Clock className="text-blue-600 dark:text-blue-400" size={20} />
+              </div>
+              <div>
+                <div className="text-lg font-bold text-[var(--app-text)]">
+                  {insights.hasHourData ? hourRange(insights.peakHour) : "—"}
+                </div>
+                <div className="text-xs text-[var(--app-subtle)]">
+                  Peak focus time
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
+                <Timer className="text-blue-600 dark:text-blue-400" size={20} />
+              </div>
+              <div>
+                <div className="text-lg font-bold text-[var(--app-text)]">
+                  {formatShort(insights.longest)}
+                </div>
+                <div className="text-xs text-[var(--app-subtle)]">
+                  Longest session
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
+                {weekDelta !== null && weekDelta < 0 ? (
+                  <TrendingDown
+                    className="text-red-600 dark:text-red-400"
+                    size={20}
+                  />
+                ) : (
+                  <TrendingUp
+                    className={
+                      weekDelta === null
+                        ? "text-[var(--app-subtle)]"
+                        : "text-green-600 dark:text-green-400"
+                    }
+                    size={20}
+                  />
+                )}
+              </div>
+              <div>
+                <div
+                  className={`text-lg font-bold ${
+                    weekDelta === null
+                      ? "text-[var(--app-text)]"
+                      : weekDelta >= 0
+                        ? "text-green-600 dark:text-green-400"
+                        : "text-red-600 dark:text-red-400"
+                  }`}
+                >
+                  {weekDelta === null
+                    ? "—"
+                    : `${weekDelta >= 0 ? "+" : ""}${weekDelta}%`}
+                </div>
+                <div className="text-xs text-[var(--app-subtle)]">
+                  This week vs last week
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className="flex size-10 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
+                <CalendarCheck
+                  className="text-blue-600 dark:text-blue-400"
+                  size={20}
+                />
+              </div>
+              <div>
+                <div className="text-lg font-bold text-[var(--app-text)]">
+                  {WEEKDAYS[insights.peakDay]}
+                </div>
+                <div className="text-xs text-[var(--app-subtle)]">
+                  Most productive day
+                </div>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <p className="text-sm text-[var(--app-muted)]">
+            Log some focus sessions to see your insights.
+          </p>
+        )}
       </div>
 
       {/* Weekly graph */}
