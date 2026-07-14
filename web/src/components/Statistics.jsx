@@ -4,7 +4,6 @@ import {
   onSnapshot,
   doc,
   addDoc,
-  increment,
   deleteDoc,
   setDoc,
 } from "firebase/firestore";
@@ -30,6 +29,7 @@ const WEEKDAYS = [
   "Fridays",
   "Saturdays",
 ];
+const POMODORO_MINUTES = 25;
 
 function toDateKey(d) {
   const dt = new Date(d);
@@ -152,10 +152,7 @@ function focusInsights(sessions) {
 }
 
 export default function StatsView({ user }) {
-  const [stats, setStats] = useState({
-    totalFocusMinutes: 0,
-    totalSessions: 0,
-  });
+  const [stats, setStats] = useState({});
   const [sessions, setSessions] = useState([]);
   const [showManual, setShowManual] = useState(false);
   const [manualMins, setManualMins] = useState("");
@@ -229,7 +226,15 @@ export default function StatsView({ user }) {
     month: "short",
   })}`;
   const maxMinutes = Math.max(60, ...week.map((d) => d.focusMinutes));
-  const totalSeconds = Math.round((stats.totalFocusMinutes || 0) * 60);
+  const totalSessions = sessions.reduce(
+    (sum, s) => sum + Math.floor((s.durationMinutes || 0) / POMODORO_MINUTES),
+    0,
+  );
+  const totalFocusMinutes = sessions.reduce(
+    (sum, s) => sum + (s.durationMinutes || 0),
+    0,
+  );
+  const totalSeconds = Math.round(totalFocusMinutes * 60);
   const hours = Math.floor(totalSeconds / 3600);
   const minutes = Math.floor((totalSeconds % 3600) / 60);
   const seconds = totalSeconds % 60;
@@ -290,21 +295,9 @@ export default function StatsView({ user }) {
       await addDoc(sessionsRef, {
         startedAt: isoStamp,
         durationMinutes: totalMins,
+        completed: totalMins >= 25,
         manual: true,
       });
-
-      const updatePayload = {
-        totalFocusMinutes: increment(totalMins),
-        totalSessions: increment(1),
-      };
-      if (!stats.lastSessionAt || isoStamp > stats.lastSessionAt) {
-        updatePayload.lastSessionAt = isoStamp;
-      }
-      await setDoc(
-        doc(database, "users", user.uid, "stats", "summary"),
-        updatePayload,
-        { merge: true },
-      );
 
       setManualMins("");
       setManualSecs("");
@@ -317,14 +310,6 @@ export default function StatsView({ user }) {
   /* Delete session functionality */
   async function deleteSession(session) {
     await deleteDoc(doc(database, "users", user.uid, "sessions", session.id));
-    await setDoc(
-      doc(database, "users", user.uid, "stats", "summary"),
-      {
-        totalFocusMinutes: increment(-(session.durationMinutes || 0)),
-        totalSessions: increment(-1),
-      },
-      { merge: true },
-    );
   }
 
   /* Save daily goal functionality */
@@ -355,7 +340,7 @@ export default function StatsView({ user }) {
         </div>
         <div className={card}>
           <div className="text-[34px] font-bold text-blue-600 dark:text-blue-400">
-            {stats.totalSessions || 0}
+            {totalSessions}
           </div>
           <div className="mt-1 text-sm text-[var(--app-subtle)]">
             Pomodoro sessions completed
