@@ -395,7 +395,7 @@ export default function StatsView({ user }) {
                 <div className="text-[28px] font-bold leading-tight text-[var(--app-text)]">
                   {formatShort(todayMinutes)}
                   <span className="ml-1 text-sm font-medium text-[var(--app-subtle)]">
-                    / {dailyGoal}m today
+                    / {formatShort(dailyGoal)} today
                   </span>
                 </div>
                 <div className="mt-0.5 flex items-center gap-2 text-sm text-[var(--app-subtle)]">
