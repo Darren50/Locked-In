@@ -30,6 +30,10 @@ def _camera_thread():
     was_focused  = True
 
     while True:
+        if not focus.is_enabled():
+            time.sleep(0.3)
+            continue
+
         frame   = cam.capture_array()
         results = detector.process(frame)
         ts      = timer.state()

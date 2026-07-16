@@ -14,6 +14,7 @@ class FocusMonitor:
         self.DISTRACT_LIMIT = 1.5
         self.DROWSY_LIMIT   = 2.0
         self._lock = threading.Lock()
+        self.enabled = True
 
     def update(self, face_detected, looking_away=False, eyes_closed=False):
         with self._lock:
@@ -56,5 +57,19 @@ class FocusMonitor:
     def get_state(self):
         with self._lock:
             return self.state
+
+    def toggle_enabled(self):
+        with self._lock:
+            self.enabled = not self.enabled
+            # reset so a stale AWAY/DROWSY doesn't linger after re-enabling
+            self.focused = True
+            self.state   = "FOCUSED"
+            self._since  = None
+            self._reason = None
+            return self.enabled
+
+    def is_enabled(self):
+        with self._lock:
+            return self.enabled
 
 focus = FocusMonitor()
