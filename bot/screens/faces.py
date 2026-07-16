@@ -32,7 +32,10 @@ def draw_cute(t, ts=None):
         mins, secs = divmod(ts['time_left'], 60)
         draw.text((175, 10), f"BREAK {mins:02d}:{secs:02d}", fill=(70, 190, 110), font=FONT_TINY)
 
-    draw.text((10, 218), "K1 Timer  K2 Tasks  K3 AI", fill=(155, 135, 210), font=FONT_SMALL)
+    draw.text((10, 218), "K1 Timer  K2 Tasks  K3 AI  K4 Cam",
+              fill=(155, 135, 210), font=FONT_SMALL)   # keep each face's colour
+    if not focus.is_enabled():
+        draw.text((250, 8), "CAM OFF", fill=(210, 80, 80), font=FONT_TINY)
     return img
 
 def draw_serious(t, ts):
@@ -61,5 +64,8 @@ def draw_serious(t, ts):
     mins, secs = divmod(ts['time_left'], 60)
     st = "⏸" if ts['paused'] else "▶"
     draw.text((10, 8), f"{st} FOCUS  {mins:02d}:{secs:02d}  S{ts['session']}", fill=(210, 65, 65), font=FONT_SMALL)
-    draw.text((10, 218), "K1 Timer  K2 Tasks  K3 AI", fill=(110, 90, 135), font=FONT_SMALL)
+    draw.text((10, 218), "K1 Timer  K2 Tasks  K3 AI  K4 Cam",
+              fill=(155, 135, 210), font=FONT_SMALL)   # keep each face's colour
+    if not focus.is_enabled():
+        draw.text((250, 8), "CAM OFF", fill=(210, 80, 80), font=FONT_TINY)
     return img

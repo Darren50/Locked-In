@@ -23,6 +23,9 @@ def draw_pomodoro(ts):
 
     mins, secs = divmod(ts['time_left'], 60)
 
+    if not focus.is_enabled():
+        draw.text((132, 200), "· camera off", fill=(140, 100, 100), font=FONT_TINY)
+
     if not ts['active']:
         timer_col = (85, 85, 105)
         draw.text((72, 57), "PRESS K1 TO START", fill=(175, 170, 95), font=FONT_TINY)
