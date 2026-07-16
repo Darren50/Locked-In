@@ -2,6 +2,12 @@ import { useState, useEffect } from "react";
 import { collection, onSnapshot } from "firebase/firestore";
 import { database } from "../firebase";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 const DAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
@@ -23,6 +29,7 @@ export default function WeekCalendar({ user }) {
   const [tasks, setTasks] = useState([]);
   const [view, setView] = useState("week");
   const [anchor, setAnchor] = useState(() => getWeekStart(new Date()));
+  const [selectedTask, setSelectedTask] = useState(null);
   const now = new Date();
 
   useEffect(() => {
@@ -124,6 +131,7 @@ export default function WeekCalendar({ user }) {
             setAnchor(d);
             setView("day");
           }}
+          onTaskClick={setSelectedTask}
         />
       ) : (
         <div className="flex-1 overflow-hidden rounded-2xl border border-[var(--app-border)] bg-[var(--app-card)] shadow-sm">
@@ -159,16 +167,17 @@ export default function WeekCalendar({ user }) {
                     )}
                   </div>
 
-                  <div className="flex flex-1 flex-col gap-2 p-2.5">
+                  <div className="flex flex-1 flex-col gap-2 overflow-y-auto p-2.5">
                     {dayTasks.length === 0 ? (
                       <p className="mt-2 text-center text-xs text-[var(--app-muted)]">
                         Nothing due
                       </p>
                     ) : (
                       dayTasks.map((t) => (
-                        <div
+                        <button
                           key={t.id}
-                          className="rounded-lg border border-[var(--app-border)] bg-[var(--app-card)] px-3 py-2 shadow-[0_1px_2px_rgba(17,24,39,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_14px_rgba(17,24,39,0.08)]"
+                          onClick={() => setSelectedTask(t)}
+                          className="w-full cursor-pointer rounded-lg border border-[var(--app-border)] bg-[var(--app-card)] px-3 py-2 text-left shadow-[0_1px_2px_rgba(17,24,39,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_6px_14px_rgba(17,24,39,0.08)]"
                         >
                           <p
                             className={`line-clamp-2 text-[13px] font-semibold ${t.done ? "text-[var(--app-muted)] line-through" : "text-[var(--app-text)]"}`}
@@ -180,7 +189,7 @@ export default function WeekCalendar({ user }) {
                               {t.dueTime}
                             </span>
                           )}
-                        </div>
+                        </button>
                       ))
                     )}
                   </div>
@@ -190,11 +199,48 @@ export default function WeekCalendar({ user }) {
           </div>
         </div>
       )}
+
+      <Dialog
+        open={!!selectedTask}
+        onOpenChange={(open) => {
+          if (!open) setSelectedTask(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-[440px]">
+          <DialogHeader>
+            <DialogTitle className="break-words pr-8 text-foreground">
+              {selectedTask?.text ?? "Task"}
+            </DialogTitle>
+          </DialogHeader>
+          {selectedTask?.description && (
+            <p className="whitespace-pre-wrap break-words text-sm text-[var(--app-subtle)]">
+              {selectedTask.description}
+            </p>
+          )}
+          <div className="mt-1 flex flex-wrap items-center gap-2">
+            {(selectedTask?.dueDate || selectedTask?.dueTime) && (
+              <span className="rounded-md bg-blue-500/10 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400">
+                {selectedTask?.dueDate}
+                {selectedTask?.dueTime ? ` · ${selectedTask.dueTime}` : ""}
+              </span>
+            )}
+            <span
+              className={`rounded-md px-2 py-1 text-xs font-medium ${
+                selectedTask?.done
+                  ? "bg-green-500/10 text-green-600 dark:text-green-400"
+                  : "bg-black/5 text-[var(--app-subtle)] dark:bg-white/10"
+              }`}
+            >
+              {selectedTask?.done ? "Completed" : "Pending"}
+            </span>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function MonthGrid({ anchor, tasksForDay, now, onPick }) {
+function MonthGrid({ anchor, tasksForDay, now, onPick, onTaskClick }) {
   const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
   const start = getWeekStart(first);
   const days = Array.from({ length: 42 }, (_, i) => {
@@ -234,7 +280,14 @@ function MonthGrid({ anchor, tasksForDay, now, onPick }) {
                 {dayTasks.slice(0, 3).map((t) => (
                   <div
                     key={t.id}
-                    className="truncate rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 dark:text-blue-400"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onTaskClick(t);
+                    }}
+                    title={
+                      t.description ? `${t.text} — ${t.description}` : t.text
+                    }
+                    className="cursor-pointer truncate rounded-md bg-blue-500/10 px-1.5 py-0.5 text-[10px] font-medium text-blue-600 transition hover:bg-blue-500/20 dark:text-blue-400"
                   >
                     {t.dueTime ? t.dueTime + " " : ""}
                     {t.text}
