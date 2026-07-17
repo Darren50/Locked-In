@@ -1,4 +1,5 @@
 import threading
+from services import sounds
 from PIL import Image, ImageDraw
 from config import W, H, USER_UID
 from fonts import FONT_MED, FONT_SMALL, FONT_TINY
@@ -158,7 +159,10 @@ def run_tasks(last_img=None):
                 with tasks_lock:
                     tasks[selected_idx]["done"] = new_done
                 db_service.db.collection("users").document(USER_UID) \
-                  .collection("tasks").document(t["id"]).update({"done": new_done})
+                  .collection("tasks").document(t["id"]) \
+                  .update({"done": new_done})
+                if new_done:
+                    sounds.play("task_done")
             if k2.is_set() and snapshot:
                 k2.clear()
                 selected_idx = max(selected_idx - 1, 0)

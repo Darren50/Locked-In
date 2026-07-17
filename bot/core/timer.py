@@ -1,5 +1,6 @@
 import time
 import threading
+from services import sounds
 from config import FOCUS_MINS, SHORT_BREAK_MINS, LONG_BREAK_MINS, SESSIONS_BEFORE_LONG
 from core.focus import focus
 from core.session import session_tracker
@@ -39,8 +40,8 @@ class PomodoroTimer:
 
     def _next_phase(self):
         if self.mode == "FOCUS":
-            threading.Thread(target=session_tracker.end, args=(True,), daemon=True).start()
-
+            self.on_focus_end(True)
+            sounds.play("session_complete")                  # ← NEW: 25 min finished
         if self.mode == "FOCUS":
             is_long    = self.session % SESSIONS_BEFORE_LONG == 0
             self.mode  = "LONG BREAK" if is_long else "BREAK"
@@ -49,8 +50,8 @@ class PomodoroTimer:
             self.session += 1
             self.mode    = "FOCUS"
             self.total   = FOCUS_MINS * 60
-            threading.Thread(target=session_tracker.start, args=(self.session,), daemon=True).start()
-
+            self.on_focus_start(self.session)
+            sounds.play("break_over")                        # ← NEW: break finished
         self.time_left = self.total
         self.paused    = True
 

@@ -1,4 +1,5 @@
 from services import db, assistant
+from services import sounds
 from hardware import buttons, display, camera
 from core import timer as timer_core
 from screens.idle import run_idle
@@ -12,6 +13,7 @@ def main():
     display.init()        # framebuffer
     buttons.init()        # GPIO + polling thread
     assistant.init()      # Groq client + pygame mixer
+    sounds.init()
     timer_core.start_thread()
     camera.init()         # camera + face detection thread
     print("Locked-In started!")

@@ -1,5 +1,6 @@
 import time
 import threading
+from services import sounds
 from picamera2 import Picamera2
 import mediapipe as mp
 from config import W, H
@@ -33,7 +34,6 @@ def _camera_thread():
         if not focus.is_enabled():
             time.sleep(0.3)
             continue
-
         frame   = cam.capture_array()
         results = detector.process(frame)
         ts      = timer.state()
@@ -68,6 +68,7 @@ def _camera_thread():
         if ts['active'] and ts['mode'] == "FOCUS":
             if not focus.is_focused() and not ts['paused']:
                 timer.toggle_pause()
+                sounds.play("alert")
                 print(f"Auto-paused — {focus.get_state()}")
             elif focus.is_focused() and ts['paused'] and not was_focused:
                 timer.toggle_pause()
