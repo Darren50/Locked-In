@@ -1,12 +1,12 @@
 import time
 import threading
-from services import sounds
 from config import FOCUS_MINS, SHORT_BREAK_MINS, LONG_BREAK_MINS, SESSIONS_BEFORE_LONG
 from core.focus import focus
 from core.session import session_tracker
+from services import sounds
 
 class PomodoroTimer:
-    def __init__(self):
+    def __init__(self, on_focus_end=None, on_focus_start=None):
         self._lock     = threading.Lock()
         self.session   = 1
         self.time_left = FOCUS_MINS * 60
@@ -14,6 +14,8 @@ class PomodoroTimer:
         self.mode      = "FOCUS"
         self.paused    = True
         self.active    = False
+        self.on_focus_end   = on_focus_end   or (lambda completed: None)
+        self.on_focus_start = on_focus_start or (lambda session:  None)
 
     def start(self):
         with self._lock:
@@ -41,7 +43,8 @@ class PomodoroTimer:
     def _next_phase(self):
         if self.mode == "FOCUS":
             self.on_focus_end(True)
-            sounds.play("session_complete")                  # ← NEW: 25 min finished
+            sounds.play("session_complete")
+
         if self.mode == "FOCUS":
             is_long    = self.session % SESSIONS_BEFORE_LONG == 0
             self.mode  = "LONG BREAK" if is_long else "BREAK"
@@ -51,7 +54,8 @@ class PomodoroTimer:
             self.mode    = "FOCUS"
             self.total   = FOCUS_MINS * 60
             self.on_focus_start(self.session)
-            sounds.play("break_over")                        # ← NEW: break finished
+            sounds.play("break_over")
+
         self.time_left = self.total
         self.paused    = True
 
@@ -68,7 +72,13 @@ class PomodoroTimer:
                         total=self.total, mode=self.mode,
                         paused=self.paused, active=self.active)
 
-timer = PomodoroTimer()
+
+timer = PomodoroTimer(
+    on_focus_end=lambda c: threading.Thread(
+        target=session_tracker.end, args=(c,), daemon=True).start(),
+    on_focus_start=lambda s: threading.Thread(
+        target=session_tracker.start, args=(s,), daemon=True).start(),
+)
 
 def _timer_thread():
     last = time.time()
