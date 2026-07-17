@@ -74,7 +74,7 @@ def run_gemini(last_img=None):
             k4.clear()
             if stream and stream.active:
                 stream.stop(); stream.close()
-            if pygame.mixer.music.get_busy():
+            if pygame.mixer.get_init() and pygame.mixer.music.get_busy():
                 pygame.mixer.music.stop()
             return "idle", draw_gemini(status)
 
@@ -118,17 +118,21 @@ def run_gemini(last_img=None):
                     status = "speaking"
                     write_lcd(draw_gemini("speaking", response=response_text))
 
-                    tts      = gTTS(text=response_text, lang="en")
-                    tts_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
-                    tts.save(tts_file.name)
-                    pygame.mixer.music.load(tts_file.name)
-                    pygame.mixer.music.play()
-                    while pygame.mixer.music.get_busy():
-                        time.sleep(0.1)
-                        if k1.is_set():
-                            k1.clear(); pygame.mixer.music.stop(); break
-                    os.unlink(tts_file.name)
-
+                    if pygame.mixer.get_init():
+                        tts      = gTTS(text=response_text, lang="en")
+                        tts_file = tempfile.NamedTemporaryFile(suffix=".mp3", delete=False)
+                        tts.save(tts_file.name)
+                        pygame.mixer.music.load(tts_file.name)
+                        pygame.mixer.music.play()
+                        while pygame.mixer.music.get_busy():
+                            time.sleep(0.1)
+                            if k1.is_set():
+                                k1.clear()
+                                pygame.mixer.music.stop()
+                                break
+                        os.unlink(tts_file.name)
+                    else:
+                        time.sleep(4)
                     status = "idle"; response_text = ""
 
                 except Exception as e:
@@ -136,7 +140,8 @@ def run_gemini(last_img=None):
                     status = "error"; response_text = ""
 
             elif status == "speaking":
-                pygame.mixer.music.stop()
+                if pygame.mixer.get_init():
+                    pygame.mixer.music.stop()
                 status = "idle"; response_text = ""
 
         time.sleep(0.05)

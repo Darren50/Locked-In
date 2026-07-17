@@ -10,7 +10,10 @@ def init():
     global groq_client
     load_dotenv(ENV_PATH)
     groq_client = Groq(api_key=os.environ["GROQ_API_KEY"])
-    pygame.mixer.init()
+    try:
+        pygame.mixer.init()
+    except pygame.error as e:
+        print(f"Audio unavailable ({e}) — voice output disabled")
 
 def transcribe(wav_path):
     with open(wav_path, "rb") as f:
