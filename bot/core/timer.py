@@ -86,9 +86,9 @@ def _timer_thread():
         now = time.time()
         if now - last >= 1.0:
             ts = timer.state()
-            timer.tick()
             if ts['active'] and not ts['paused'] and ts['mode'] == "FOCUS":
-                session_tracker.tick(focus.is_focused())
+                session_tracker.tick(focus.is_focused())   # count FIRST
+            timer.tick()                                    # then decrement
             last = now
         time.sleep(0.05)
 
